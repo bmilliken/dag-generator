@@ -1,0 +1,21 @@
+# Ignore virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Ignore pyenv local versions
+.python-version
+
+# Ignore pyenv builds (never commit these)
+.pyenv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# VSCode / IDE configs
+.vscode/
+.idea/
