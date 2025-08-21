@@ -1,0 +1,13 @@
+group: mart
+table: revenue_daily
+columns:
+  - name: dt
+    depends_on: 
+    - stg.orders.order_date             
+  - name: orders_count
+    depends_on: 
+    - stg.orders.order_id
+    - stg.orders.order_date
+  - name: customers_count
+    depends_on: 
+    - stg.customers.customer_id

@@ -1,0 +1,7 @@
+group: src
+table: customers_raw
+columns:
+  - name: customer_id
+    depends_on: []                # sources don't depend on anything
+  - name: email
+    depends_on: []

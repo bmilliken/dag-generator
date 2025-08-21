@@ -1,0 +1,9 @@
+group: src
+table: orders_raw
+columns:
+  - name: order_id
+    depends_on: []
+  - name: customer_id
+    depends_on: []
+  - name: order_ts
+    depends_on: []
