@@ -1,0 +1,13 @@
+group: src
+table: customers
+columns:
+  - name: customer_id
+    depends_on: []
+  - name: customer_name
+    depends_on: []
+  - name: customer_email
+    depends_on: []
+  - name: customer_segment
+    depends_on: []
+  - name: registration_date
+    depends_on: []

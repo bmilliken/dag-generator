@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import ReactFlow, { Background, Controls, MiniMap, type Node, type Edge, useNodesState, useEdgesState, Position, MarkerType } from "reactflow";
 import "reactflow/dist/style.css";
-import { fetchGraph } from "./api";
+import { fetchGraph, fetchProjects } from "./api";
 import type { GroupedGraphJSON, TableId } from "./types";
 import { applyElkLayout } from "./layout";
 
@@ -91,12 +91,19 @@ export default function GraphView({ seed }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [groupColors, setGroupColors] = useState<Record<string, string>>({});
+  
+  // Project selection state
+  const [availableProjects, setAvailableProjects] = useState<string[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string>("ecommerce"); // Default project
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (project?: string) => {
+    const projectToUse = project || selectedProject;
+    if (!projectToUse) return;
+    
     setLoading(true);
     setErr(null);
     try {
-      const data = await fetchGraph(seed);
+      const data = await fetchGraph(projectToUse, seed);
       const { nodes, edges, groupColors } = buildNodesAndEdges(data);
       const positioned = await applyElkLayout(nodes, edges);
       setNodes(positioned);
@@ -110,9 +117,33 @@ export default function GraphView({ seed }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [seed, setNodes, setEdges]);
+  }, [seed, setNodes, setEdges, selectedProject]);
+
+  // Load available projects on mount
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const projects = await fetchProjects();
+        setAvailableProjects(projects);
+        // If default project doesn't exist, use first available
+        if (projects.length > 0 && !projects.includes("ecommerce")) {
+          setSelectedProject(projects[0]);
+        }
+      } catch (e) {
+        console.error("Failed to load projects:", e);
+      }
+    };
+    loadProjects();
+  }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Reload when selected project changes
+  useEffect(() => {
+    if (selectedProject) {
+      load();
+    }
+  }, [selectedProject, load]);
 
   const [active, setActive] = useState<TableId | null>(null);
   const [lineageNodes, setLineageNodes] = useState<Set<TableId> | null>(null);
@@ -123,7 +154,7 @@ export default function GraphView({ seed }: Props) {
     setErr(null);
     try {
       // Fetch lineage data from backend
-      const lineageData = await fetchGraph(tableId);
+      const lineageData = await fetchGraph(selectedProject, tableId);
       const { nodes: lineageNodeList, edges: lineageEdgeList } = buildNodesAndEdges(lineageData);
       
       // Convert to sets for quick lookup
@@ -139,7 +170,7 @@ export default function GraphView({ seed }: Props) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedProject]);
 
   const handleNodeClick = useCallback((nodeId: TableId) => {
     setActive(nodeId);
@@ -151,6 +182,15 @@ export default function GraphView({ seed }: Props) {
     setLineageNodes(null);
     setLineageEdges(null);
   }, []);
+
+  const handleProjectChange = useCallback((newProject: string) => {
+    setSelectedProject(newProject);
+    clearHighlight(); // Clear any active highlights when switching projects
+  }, [clearHighlight]);
+
+  const handleReload = useCallback(() => {
+    load();
+  }, [load]);
 
   const rfNodes = nodes.map((n) => ({
     ...n,
@@ -173,11 +213,30 @@ export default function GraphView({ seed }: Props) {
         }
       `}</style>
       
-      <div style={{ position: "absolute", zIndex: 10, left: 12, top: 12, display: "flex", gap: 8 }}>
+      <div style={{ position: "absolute", zIndex: 10, left: 12, top: 12, display: "flex", gap: 8, alignItems: "center" }}>
+        {/* Project Selector */}
+        <select 
+          value={selectedProject} 
+          onChange={(e) => handleProjectChange(e.target.value)}
+          style={{ 
+            padding: "6px 10px", 
+            borderRadius: 8, 
+            border: "1px solid #ddd", 
+            background: "#fff",
+            fontSize: 14
+          }}
+        >
+          {availableProjects.map(project => (
+            <option key={project} value={project}>
+              {project}
+            </option>
+          ))}
+        </select>
+        
         <button onClick={clearHighlight} disabled={!active} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", background: "#fff" }}>
           Clear highlight
         </button>
-        <button onClick={load} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", background: "#fff" }}>
+        <button onClick={handleReload} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", background: "#fff" }}>
           Reload
         </button>
         {loading && <span>Loading…</span>}

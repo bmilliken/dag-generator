@@ -1,0 +1,13 @@
+group: src
+table: order_items
+columns:
+  - name: item_id
+    depends_on: []
+  - name: order_id
+    depends_on: []
+  - name: product_id
+    depends_on: []
+  - name: quantity
+    depends_on: []
+  - name: unit_price
+    depends_on: []

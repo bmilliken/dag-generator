@@ -1,0 +1,7 @@
+group: mart
+table: order
+columns:
+  - name: order
+    depends_on: 
+    - stg.enriched_orders.order_id
+    - stg.enriched_orders.item_count

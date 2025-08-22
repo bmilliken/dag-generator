@@ -5,10 +5,11 @@ from models import TableSpec
 def build_graph(specs: Iterable[TableSpec]) -> nx.DiGraph:
     """
     Build column-level lineage internally, then collapse to a table-only DiGraph.
+    Shows DIRECT table dependencies for DAG visualization.
 
     Returns:
         nx.DiGraph with nodes as "group.table" (attrs: group, table),
-        edges inferred from any column->column dependency between those tables.
+        edges showing direct table-to-table dependencies only.
     """
     # 1) Build column graph (internal)
     col_g = nx.DiGraph()
@@ -27,7 +28,7 @@ def build_graph(specs: Iterable[TableSpec]) -> nx.DiGraph:
                 # dep is expected like "group.table.column"
                 col_g.add_edge(dep, tgt_col_id)
 
-    # 2) Collapse column graph -> table graph
+    # 2) Collapse column graph -> table graph (DIRECT dependencies only)
     tbl_g = nx.DiGraph()
 
     # helper: derive table id from any node id
@@ -57,14 +58,38 @@ def build_graph(specs: Iterable[TableSpec]) -> nx.DiGraph:
                 grp, tbl = (tid.split(".", 1) + [""])[:2] if "." in tid else ("", tid)
                 tbl_g.add_node(tid, group=grp, table=tbl)
 
-    # add table->table edges derived from any column->column edge
+    # add table->table edges for DIRECT dependencies only
     for u, v in col_g.edges():
         src_tbl = table_id(u)
         dst_tbl = table_id(v)
         if src_tbl != dst_tbl:
             tbl_g.add_edge(src_tbl, dst_tbl)
 
-    # 3) Ensure isolated tables (with columns but no deps) are present (already added above)
-    # No extra work needed; nodes exist even if degree 0.
+    # Store the column graph for lineage queries
+    tbl_g.graph['column_graph'] = col_g
 
     return tbl_g
+
+
+def get_transitive_column_dependencies(col_g: nx.DiGraph, target_column: str) -> set[str]:
+    """
+    Get all source tables that transitively contribute to a target column.
+    This is used for lineage highlighting, not DAG drawing.
+    """
+    if target_column not in col_g:
+        return set()
+    
+    # Get all ancestor columns
+    ancestor_columns = nx.ancestors(col_g, target_column)
+    ancestor_columns.add(target_column)
+    
+    # Extract unique source tables from ancestor columns
+    source_tables = set()
+    for col_id in ancestor_columns:
+        # Parse "group.table.column" to get "group.table"
+        parts = col_id.split(".", 2)
+        if len(parts) >= 2:
+            table_id = f"{parts[0]}.{parts[1]}"
+            source_tables.add(table_id)
+    
+    return source_tables

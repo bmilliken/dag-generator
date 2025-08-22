@@ -1,0 +1,13 @@
+group: src
+table: orders
+columns:
+  - name: order_id
+    depends_on: []
+  - name: user_id
+    depends_on: []
+  - name: order_date
+    depends_on: []
+  - name: total_amount
+    depends_on: []
+  - name: status
+    depends_on: []

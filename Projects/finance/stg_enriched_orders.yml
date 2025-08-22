@@ -1,0 +1,17 @@
+group: stg
+table: enriched_orders
+columns:
+  - name: order_id
+    depends_on: ["src.orders.order_id"]
+  - name: user_id
+    depends_on: ["src.orders.user_id"]
+  - name: order_date
+    depends_on: ["src.orders.order_date"]
+  - name: item_count
+    depends_on: ["src.order_items.quantity"]  # Generated field: sum of quantities per order
+  - name: order_revenue
+    depends_on: ["src.order_items.quantity", "src.order_items.unit_price"]  # Generated field: sum(qty * price)
+  - name: customer_name
+    depends_on: ["src.customers.customer_name"]  # Joined from customers table
+  - name: customer_segment
+    depends_on: ["src.customers.customer_segment"]  # Customer segmentation info
