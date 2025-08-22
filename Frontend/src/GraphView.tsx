@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import ReactFlow, { Background, Controls, MiniMap, type Node, type Edge, useNodesState, useEdgesState, Position, MarkerType } from "reactflow";
 import "reactflow/dist/style.css";
-import { fetchGraph, fetchProjects } from "./api";
+import { fetchGraph, fetchProjects, fetchTableDetails, type TableDetails } from "./api";
 import type { GroupedGraphJSON, TableId } from "./types";
 import { applyElkLayout } from "./layout";
 
@@ -148,13 +148,18 @@ export default function GraphView({ seed }: Props) {
   const [active, setActive] = useState<TableId | null>(null);
   const [lineageNodes, setLineageNodes] = useState<Set<TableId> | null>(null);
   const [lineageEdges, setLineageEdges] = useState<Set<string> | null>(null);
+  const [tableDetails, setTableDetails] = useState<TableDetails | null>(null);
 
   const loadLineage = useCallback(async (tableId: TableId) => {
     setLoading(true);
     setErr(null);
     try {
-      // Fetch lineage data from backend
-      const lineageData = await fetchGraph(selectedProject, tableId);
+      // Fetch lineage data and table details from backend
+      const [lineageData, details] = await Promise.all([
+        fetchGraph(selectedProject, tableId),
+        fetchTableDetails(selectedProject, tableId)
+      ]);
+      
       const { nodes: lineageNodeList, edges: lineageEdgeList } = buildNodesAndEdges(lineageData);
       
       // Convert to sets for quick lookup
@@ -163,10 +168,12 @@ export default function GraphView({ seed }: Props) {
       
       setLineageNodes(nodeSet);
       setLineageEdges(edgeSet);
+      setTableDetails(details);
     } catch (e: any) {
       setErr(e?.message ?? String(e));
       setLineageNodes(null);
       setLineageEdges(null);
+      setTableDetails(null);
     } finally {
       setLoading(false);
     }
@@ -181,7 +188,22 @@ export default function GraphView({ seed }: Props) {
     setActive(null);
     setLineageNodes(null);
     setLineageEdges(null);
+    setTableDetails(null);
   }, []);
+
+  // Handle keyboard events
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        clearHighlight();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [clearHighlight]);
 
   const handleProjectChange = useCallback((newProject: string) => {
     setSelectedProject(newProject);
@@ -248,7 +270,7 @@ export default function GraphView({ seed }: Props) {
         <div style={{ 
           position: "absolute", 
           zIndex: 10, 
-          right: 12, 
+          right: tableDetails ? 450 : 12, // Move further left when details panel is active
           top: 12, 
           background: "rgba(255,255,255,0.95)",
           padding: 12,
@@ -271,10 +293,119 @@ export default function GraphView({ seed }: Props) {
                 <span>{group}</span>
               </div>
             ))}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, paddingTop: 4, borderTop: '1px solid #eee' }}>
-              <span>→</span>
-              <span>Data flows left to right</span>
+          </div>
+        </div>
+      )}
+
+      {/* Table Details Panel */}
+      {tableDetails && (
+        <div style={{ 
+          position: "absolute", 
+          zIndex: 10, 
+          right: 12, 
+          top: 12,
+          bottom: 12, // Stretch to full height
+          background: "rgba(255,255,255,0.95)",
+          padding: 16,
+          borderRadius: 8,
+          border: "1px solid #ddd",
+          fontSize: 12,
+          width: 400,
+          overflowY: 'auto'
+        }}>
+          <div style={{ fontWeight: 'bold', marginBottom: 12, fontSize: 14 }}>
+            Column Dependencies: <code style={{ 
+              background: '#f0f0f0', 
+              padding: '2px 4px', 
+              borderRadius: 3,
+              fontFamily: 'monospace'
+            }}>{tableDetails.table}</code>
+          </div>
+          
+          {tableDetails.source_tables.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontWeight: 'bold', marginBottom: 6 }}>Source Tables:</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {tableDetails.source_tables.map(table => (
+                  <code key={table} style={{ 
+                    background: '#f0f0f0', 
+                    padding: '3px 6px', 
+                    borderRadius: 4,
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    border: '1px solid #d0d0d0'
+                  }}>
+                    {table}
+                  </code>
+                ))}
+              </div>
             </div>
+          )}
+
+          <div>
+            <div style={{ fontWeight: 'bold', marginBottom: 8 }}>Column Details:</div>
+            {tableDetails.columns.map(col => (
+              <div key={col.column} style={{ 
+                marginBottom: 12, 
+                padding: 10, 
+                background: '#f9f9f9', 
+                borderRadius: 6,
+                border: '1px solid #e0e0e0'
+              }}>
+                <div style={{ 
+                  fontWeight: '900', 
+                  marginBottom: 6,
+                  fontSize: 16,
+                  color: '#333'
+                }}>
+                  {col.column}
+                </div>
+                
+                {col.direct_dependencies.length > 0 && (
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: '#666', marginBottom: 3, fontWeight: 'bold' }}>Direct dependencies:</div>
+                    {col.direct_dependencies.map(dep => (
+                      <code key={dep} style={{ 
+                        fontFamily: 'monospace', 
+                        fontSize: 11, 
+                        background: '#f8f9fa',
+                        border: '1px solid #dee2e6',
+                        padding: '2px 6px',
+                        borderRadius: 3,
+                        margin: '2px 0',
+                        display: 'block',
+                        color: '#495057'
+                      }}>
+                        {dep}
+                      </code>
+                    ))}
+                  </div>
+                )}
+                
+                {Object.keys(col.source_columns).length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 11, color: '#666', marginBottom: 4, fontWeight: 'bold' }}>Source columns:</div>
+                    {Object.entries(col.source_columns).map(([table, columns]) => 
+                      columns.map(column => (
+                        <code key={`${table}.${column}`} style={{ 
+                          fontFamily: 'monospace', 
+                          fontSize: 11, 
+                          background: '#f8f9fa',
+                          border: '1px solid #dee2e6',
+                          padding: '2px 6px',
+                          borderRadius: 3,
+                          margin: '2px 0',
+                          display: 'block',
+                          color: '#495057'
+                        }}>
+                          {table}.{column}
+                        </code>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}

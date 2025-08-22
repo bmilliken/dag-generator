@@ -24,3 +24,21 @@ export async function fetchGraph(project: string, seed?: string): Promise<Groupe
   }
   return res.json();
 }
+
+export interface TableDetails {
+  table: string;
+  columns: Array<{
+    column: string;
+    direct_dependencies: string[];
+    source_columns: Record<string, string[]>;
+  }>;
+  source_tables: string[];
+}
+
+export async function fetchTableDetails(project: string, table: string): Promise<TableDetails> {
+  const response = await fetch(`${API_BASE}/table-details?project=${encodeURIComponent(project)}&table=${encodeURIComponent(table)}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch table details: ${response.status}`);
+  }
+  return response.json();
+}
