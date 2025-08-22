@@ -1,0 +1,13 @@
+group: src
+table: products
+columns:
+  - name: product_id
+    depends_on: []
+  - name: product_name
+    depends_on: []
+  - name: category_id
+    depends_on: []
+  - name: price
+    depends_on: []
+  - name: created_at
+    depends_on: []

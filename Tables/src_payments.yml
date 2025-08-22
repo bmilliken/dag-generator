@@ -1,0 +1,15 @@
+group: src
+table: payments
+columns:
+  - name: payment_id
+    depends_on: []
+  - name: order_id
+    depends_on: []
+  - name: payment_method
+    depends_on: []
+  - name: amount
+    depends_on: []
+  - name: payment_date
+    depends_on: []
+  - name: status
+    depends_on: []

@@ -1,0 +1,13 @@
+group: src
+table: promotions
+columns:
+  - name: promotion_id
+    depends_on: []
+  - name: promotion_name
+    depends_on: []
+  - name: discount_percentage
+    depends_on: []
+  - name: start_date
+    depends_on: []
+  - name: end_date
+    depends_on: []

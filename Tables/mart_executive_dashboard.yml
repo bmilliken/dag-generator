@@ -1,0 +1,15 @@
+group: mart
+table: executive_dashboard
+columns:
+  - name: metric_date
+    depends_on: [mart.revenue_daily.date, mart.financial_summary.date]
+  - name: daily_revenue
+    depends_on: [mart.revenue_daily.revenue]
+  - name: total_customers
+    depends_on: [mart.customer_lifetime_value.customer_id]
+  - name: top_product_category
+    depends_on: [mart.product_performance.category_name, mart.product_performance.total_revenue]
+  - name: avg_customer_value
+    depends_on: [mart.customer_lifetime_value.total_lifetime_value]
+  - name: payment_success_rate
+    depends_on: [mart.financial_summary.payment_success_rate]

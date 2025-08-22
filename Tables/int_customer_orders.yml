@@ -1,0 +1,15 @@
+group: int
+table: customer_orders
+columns:
+  - name: customer_id
+    depends_on: [stg.customers.customer_id]
+  - name: order_id
+    depends_on: [stg.orders.order_id]
+  - name: order_date
+    depends_on: [stg.orders.order_date]
+  - name: customer_email
+    depends_on: [stg.customers.email]
+  - name: order_total
+    depends_on: [stg.order_items.line_total]
+  - name: payment_status
+    depends_on: [stg.payments.is_successful]

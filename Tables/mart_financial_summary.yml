@@ -1,0 +1,15 @@
+group: mart
+table: financial_summary
+columns:
+  - name: date
+    depends_on: [int.customer_orders.order_date]
+  - name: total_revenue
+    depends_on: [int.customer_orders.order_total]
+  - name: total_orders
+    depends_on: [int.customer_orders.order_id]
+  - name: successful_payments
+    depends_on: [int.payment_summary.all_payments_successful]
+  - name: payment_success_rate
+    depends_on: [int.payment_summary.all_payments_successful]
+  - name: avg_order_value
+    depends_on: [int.customer_orders.order_total]

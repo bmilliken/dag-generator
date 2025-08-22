@@ -1,0 +1,15 @@
+group: stg
+table: payments
+columns:
+  - name: payment_id
+    depends_on: [src.payments.payment_id]
+  - name: order_id
+    depends_on: [src.payments.order_id]
+  - name: payment_method
+    depends_on: [src.payments.payment_method]
+  - name: amount
+    depends_on: [src.payments.amount]
+  - name: payment_date
+    depends_on: [src.payments.payment_date]
+  - name: is_successful
+    depends_on: [src.payments.status]

@@ -1,0 +1,15 @@
+group: int
+table: customer_metrics
+columns:
+  - name: customer_id
+    depends_on: [stg.customers.customer_id]
+  - name: customer_email
+    depends_on: [stg.customers.email]
+  - name: first_order_date
+    depends_on: [stg.orders.order_date]
+  - name: last_order_date
+    depends_on: [stg.orders.order_date]
+  - name: total_orders
+    depends_on: [stg.orders.order_id]
+  - name: total_spent
+    depends_on: [stg.order_items.line_total]

@@ -1,0 +1,9 @@
+group: stg
+table: orders
+columns:
+  - name: order_id
+    depends_on: [src.orders_raw.order_id]     # stg -> src
+  - name: order_date
+    depends_on: [src.orders_raw.order_ts]
+  - name: customer_id
+    depends_on: [src.orders_raw.customer_id]

@@ -1,0 +1,13 @@
+group: int
+table: payment_summary
+columns:
+  - name: order_id
+    depends_on: [stg.payments.order_id]
+  - name: total_payments
+    depends_on: [stg.payments.amount]
+  - name: payment_methods_used
+    depends_on: [stg.payments.payment_method]
+  - name: payment_date
+    depends_on: [stg.payments.payment_date]
+  - name: all_payments_successful
+    depends_on: [stg.payments.is_successful]

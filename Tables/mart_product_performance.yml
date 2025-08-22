@@ -1,0 +1,15 @@
+group: mart
+table: product_performance
+columns:
+  - name: product_id
+    depends_on: [int.product_sales.product_id]
+  - name: product_name
+    depends_on: [int.product_sales.product_name]
+  - name: category_name
+    depends_on: [int.product_sales.category_name]
+  - name: total_revenue
+    depends_on: [int.product_sales.revenue]
+  - name: total_quantity_sold
+    depends_on: [int.product_sales.quantity_sold]
+  - name: avg_daily_sales
+    depends_on: [int.product_sales.revenue, int.product_sales.order_date]
