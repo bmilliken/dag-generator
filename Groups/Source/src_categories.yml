@@ -1,0 +1,25 @@
+group: src
+table: categories
+description: "Product category hierarchy and classification data"
+columns:
+  - name: category_id
+    description: "Unique identifier for each product category"
+    depends_on: []
+  - name: category_name
+    description: "Display name of the category"
+    depends_on: []
+  - name: parent_category_id
+    description: "Foreign key reference to parent category (null for top-level categories)"
+    depends_on: []
+  - name: category_description
+    description: "Detailed description of what products belong in this category"
+    depends_on: []
+  - name: sort_order
+    description: "Display order for category presentation in UI"
+    depends_on: []
+  - name: is_active
+    description: "Boolean flag indicating if category is currently in use"
+    depends_on: []
+  - name: created_date
+    description: "Date when category was first created"
+    depends_on: []

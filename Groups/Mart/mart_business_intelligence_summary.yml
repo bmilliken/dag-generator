@@ -1,0 +1,46 @@
+group: mart
+table: business_intelligence_summary
+description: "Comprehensive business intelligence mart combining customer, product, and financial metrics"
+columns:
+  - name: report_key
+    description: "Unique identifier for each business intelligence record"
+    depends_on: [stg.customers.customer_key, stg.product_analytics.product_key]
+  - name: customer_key
+    description: "Unique identifier for the customer"
+    depends_on: [stg.customers.customer_key]
+  - name: customer_name
+    description: "Full name of the customer"
+    depends_on: [stg.customers.full_name]
+  - name: customer_segment_value
+    description: "Customer lifetime value segment classification"
+    depends_on: [stg.customers.customer_lifetime_value]
+  - name: product_key
+    description: "Unique identifier for the product"
+    depends_on: [stg.product_analytics.product_key]
+  - name: product_name
+    description: "Name of the product"
+    depends_on: [stg.product_analytics.product_name]
+  - name: category_name
+    description: "Product category name"
+    depends_on: [stg.product_analytics.category_name]
+  - name: customer_product_purchases
+    description: "Number of times this customer has purchased this specific product"
+    depends_on: [stg.customers.customer_key, stg.product_analytics.product_key, stg.order_items_with_metrics.quantity_ordered]
+  - name: customer_product_revenue
+    description: "Total revenue generated from this customer purchasing this product"
+    depends_on: [stg.customers.customer_key, stg.product_analytics.product_key, stg.order_items_with_metrics.line_item_total]
+  - name: customer_category_affinity
+    description: "Percentage of customer's total purchases that come from this product category"
+    depends_on: [stg.customers.customer_lifetime_value, stg.product_analytics.category_name, stg.order_items_with_metrics.line_item_total]
+  - name: product_customer_penetration
+    description: "Percentage of this product's total sales attributed to this customer"
+    depends_on: [stg.product_analytics.total_revenue_generated, stg.customers.customer_key, stg.order_items_with_metrics.line_item_total]
+  - name: cross_sell_opportunity_score
+    description: "Calculated score for cross-selling opportunities based on customer behavior and product performance"
+    depends_on: [stg.customers.customer_lifetime_value, stg.customers.is_high_value_customer, stg.product_analytics.profit_margin, stg.product_analytics.category_revenue_rank]
+  - name: customer_payment_reliability
+    description: "Average payment success rate for this customer across all orders"
+    depends_on: [stg.customers.customer_key, stg.payments_summary.customer_key, stg.payments_summary.payment_status]
+  - name: last_interaction_date
+    description: "Most recent date of customer interaction (order or payment)"
+    depends_on: [stg.orders_enriched.order_date, stg.payments_summary.payment_date, stg.customers.customer_key]

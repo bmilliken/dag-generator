@@ -1,0 +1,34 @@
+group: stg
+table: orders_enriched
+description: "Orders data enriched with calculated metrics and customer information"
+columns:
+  - name: order_key
+    description: "Unique identifier for each order"
+    depends_on: [src.orders.order_id]
+  - name: customer_key
+    description: "Foreign key reference to the customer who placed this order"
+    depends_on: [src.orders.user_id]
+  - name: order_date
+    description: "Date when the order was placed"
+    depends_on: [src.orders.order_date]
+  - name: order_status
+    description: "Current processing status of the order"
+    depends_on: [src.orders.status]
+  - name: total_order_amount
+    description: "Total monetary value of the order"
+    depends_on: [src.orders.total_amount]
+  - name: order_item_count
+    description: "Total number of individual items in this order (sum of quantities)"
+    depends_on: [src.orders.order_id, src.order_items.order_id, src.order_items.quantity]
+  - name: unique_products_count
+    description: "Number of distinct products in this order"
+    depends_on: [src.orders.order_id, src.order_items.order_id, src.order_items.product_id]
+  - name: average_item_price
+    description: "Average price per item across all line items in this order"
+    depends_on: [src.orders.order_id, src.order_items.order_id, src.order_items.unit_price, src.order_items.quantity]
+  - name: days_since_order
+    description: "Number of days between order date and current date"
+    depends_on: [src.orders.order_date]
+  - name: is_large_order
+    description: "Boolean flag indicating if order total exceeds $500 threshold"
+    depends_on: [src.orders.total_amount]

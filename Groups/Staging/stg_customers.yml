@@ -1,0 +1,34 @@
+group: stg
+table: customers
+description: "Enhanced customer data with calculated metrics and business logic"
+columns:
+  - name: customer_key
+    description: "Unique identifier for each customer"
+    depends_on: [src.customers.customer_id]
+  - name: full_name
+    description: "Customer's complete name (first + last)"
+    depends_on: [src.customers.customer_name]
+  - name: email_address
+    description: "Customer's primary email address"
+    depends_on: [src.customers.customer_email]
+  - name: country_code
+    description: "ISO country code derived from customer location data"
+    depends_on: [src.customers.customer_segment]
+  - name: registration_date
+    description: "Date when customer first registered"
+    depends_on: [src.customers.registration_date]
+  - name: days_since_registration
+    description: "Number of days between registration date and current date"
+    depends_on: [src.customers.registration_date]
+  - name: customer_lifetime_orders
+    description: "Total count of orders placed by this customer across their lifetime"
+    depends_on: [src.customers.customer_id, src.orders.user_id]
+  - name: customer_lifetime_value
+    description: "Sum of all order amounts for this customer across their entire relationship"
+    depends_on: [src.customers.customer_id, src.orders.user_id, src.orders.total_amount]
+  - name: is_high_value_customer
+    description: "Boolean flag indicating if customer lifetime value exceeds $1000 threshold"
+    depends_on: [src.customers.customer_id, src.orders.user_id, src.orders.total_amount]
+  - name: is_active_customer
+    description: "Boolean flag indicating if customer has placed an order in the last 90 days"
+    depends_on: [src.customers.customer_id, src.orders.user_id, src.orders.order_date]

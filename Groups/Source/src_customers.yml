@@ -1,0 +1,19 @@
+group: src
+table: customers
+description: "Raw customer data from the source system"
+columns:
+  - name: customer_id
+    description: "Unique identifier for each customer"
+    depends_on: []
+  - name: customer_name
+    description: "Full name of the customer"
+    depends_on: []
+  - name: customer_email
+    description: "Primary email address for customer communication"
+    depends_on: []
+  - name: customer_segment
+    description: "Business classification of customer (enterprise, SMB, individual)"
+    depends_on: []
+  - name: registration_date
+    description: "Date when customer first registered with our service"
+    depends_on: []

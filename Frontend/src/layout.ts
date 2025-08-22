@@ -75,8 +75,8 @@ export async function applyElkLayout(nodes: Node[], edges: Edge[]) {
   });
   
   // Position nodes left-to-right by layer
-  const layerWidth = 250; // Horizontal spacing between layers
-  const nodeHeight = 100; // Vertical spacing between nodes
+  const layerWidth = 350; // Horizontal spacing between layers
+  const nodeHeight = 150; // Vertical spacing between nodes
   const startX = 50;
   const startY = 50;
   
