@@ -87,18 +87,18 @@ class JSONExporter:
         if table is None:
             return {"error": f"Table '{table_name}' not found"}
         
-        # Collect all tables connected to this table through column dependencies and dependents
+        # Collect all tables in the lineage of this table (without cross-contamination)
         connected_tables = set()
         
         # Build column lineage information for the target table
         columns_info = []
         for column in table.columns:
-            # Get all columns connected to this column (dependencies and dependents)
-            all_connected_columns = column.get_all_connected_columns()
+            # Get columns in the lineage of this column (prevents cross-contamination)
+            lineage_columns = column.get_lineage_columns()
             
-            # Add tables from all connected columns to our set
-            for connected_col in all_connected_columns:
-                connected_tables.add(connected_col.table)
+            # Add tables from all lineage columns to our set
+            for lineage_col in lineage_columns:
+                connected_tables.add(lineage_col.table)
             
             # Get immediate dependencies
             immediate_dependencies = column.get_prev_columns()

@@ -163,6 +163,27 @@ class Table:
         
         return connected_tables
     
+    def get_lineage_tables(self) -> Set['Table']:
+        """
+        Get tables in the direct lineage of this table without creating cross-contamination.
+        This prevents source tables from appearing connected to each other when they
+        both feed into the same downstream table.
+        
+        Returns:
+            Set[Table]: Set of tables in the direct lineage path of this table
+        """
+        lineage_tables = set()
+        
+        # For each column in this table, get its lineage columns (not all connected)
+        for column in self.columns:
+            lineage_columns = column.get_lineage_columns()
+            
+            # Extract the unique tables from all lineage columns
+            for lineage_column in lineage_columns:
+                lineage_tables.add(lineage_column.table)
+        
+        return lineage_tables
+    
     def add_column(self, column: 'Column') -> None:
         """
         Add a column to this table.

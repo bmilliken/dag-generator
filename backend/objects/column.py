@@ -152,3 +152,47 @@ class Column:
         # Remove self from the result since we want connected columns, not including self
         connected_columns.discard(self)
         return connected_columns
+    
+    def get_lineage_columns(self) -> Set['Column']:
+        """
+        Get columns in the direct lineage of this column without creating cross-contamination.
+        This includes the full upstream path (including intermediate stages) and downstream dependents, 
+        preventing source tables from appearing connected to each other through shared dependents.
+        
+        Returns:
+            Set[Column]: Set of columns in the direct lineage path of this column
+        """
+        lineage_columns = set()
+        visited = set()
+        
+        def _collect_upstream(column: 'Column'):
+            if column in visited:
+                return
+            visited.add(column)
+            lineage_columns.add(column)
+            
+            # Traverse backwards through all dependencies to get the full upstream path
+            for dep in column.dependencies:
+                _collect_upstream(dep)
+        
+        def _collect_downstream(column: 'Column'):
+            if column in visited:
+                return
+            visited.add(column)
+            lineage_columns.add(column)
+            
+            # Only traverse forward to dependents
+            for dependent in column.dependents:
+                _collect_downstream(dependent)
+        
+        # Get the full upstream path (including intermediate stages like stg)
+        for dependency in self.dependencies:
+            _collect_upstream(dependency)
+        
+        # Get downstream dependents
+        for dependent in self.dependents:
+            _collect_downstream(dependent)
+        
+        # Remove self from the result
+        lineage_columns.discard(self)
+        return lineage_columns
