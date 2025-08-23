@@ -1,23 +1,17 @@
 # Docker ignore file for DAG Generator
 # Excludes unnecessary files from Docker build context
 
-# Python cache and bytecode
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
+# Git and version control
+.git/
+.gitignore
+
+# Development environment
+.venv/
+.vscode/
+*.env
+
+# Documentation (included in builds)
+# README.md
 wheels/
 *.egg-info/
 .installed.cfg

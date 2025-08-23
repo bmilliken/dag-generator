@@ -1,0 +1,9 @@
+group: raw
+table: users
+columns:
+  - name: user_id
+    description: "Unique identifier for users"
+  - name: email
+    description: "User email address"
+  - name: created_at
+    description: "Account creation timestamp"

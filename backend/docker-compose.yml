@@ -1,0 +1,29 @@
+# Backend Docker Compose for DAG Generator API
+#
+# This docker-compose setup runs the DAG Generator API backend as a containerized service.
+# The Projects folder is mounted as a volume so you can work with your YAML files
+# from the host system while the API runs in the container.
+
+version: '3.8'
+
+services:
+  dag-api-backend:
+    build: .
+    container_name: dag-generator-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mount the Projects folder from parent directory to container
+      - ../Projects:/app/Projects:ro
+    environment:
+      - FLASK_ENV=production
+      - PYTHONPATH=/app
+      # Configure which project folder to analyze (default: finance)
+      # - DAG_TARGET_PROJECT=finance
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

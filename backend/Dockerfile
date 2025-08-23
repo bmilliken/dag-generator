@@ -15,13 +15,12 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the application code (excluding Projects folder)
+# Copy the backend application code
 COPY api/ ./api/
 COPY dag/ ./dag/
 COPY objects/ ./objects/
 COPY schema/ ./schema/
 COPY validate_yaml.py ./
-COPY README.md ./
 
 # Create a Projects directory for mounting
 RUN mkdir -p /app/Projects
