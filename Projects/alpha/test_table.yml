@@ -1,7 +1,0 @@
-group: test
-table: first_table
-columns:
-  - name: id
-    description: "Primary key"
-  - name: name  
-    description: "Record name"

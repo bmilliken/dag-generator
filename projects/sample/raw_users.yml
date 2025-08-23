@@ -1,0 +1,20 @@
+group: raw
+table: raw_users
+description: Raw user data from source system
+columns:
+  - name: user_id
+    description: User identifier
+    type: integer
+    depends_on: []
+  - name: username
+    description: Username
+    type: string
+    depends_on: []
+  - name: email
+    description: User email address
+    type: string
+    depends_on: []
+  - name: created_at
+    description: Account creation timestamp
+    type: timestamp
+    depends_on: []

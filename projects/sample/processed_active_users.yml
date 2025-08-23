@@ -1,0 +1,28 @@
+group: processed
+table: processed_active_users
+description: Processed active users with enriched data
+columns:
+  - name: user_id
+    description: User identifier
+    type: integer
+    depends_on: ["raw.raw_users.user_id"]
+  - name: username
+    description: Username
+    type: string
+    depends_on: ["raw.raw_users.username"]
+  - name: email
+    description: User email address
+    type: string
+    depends_on: ["raw.raw_users.email"]
+  - name: is_active
+    description: Whether user is currently active
+    type: boolean
+    depends_on: []
+  - name: last_login
+    description: Last login timestamp
+    type: timestamp
+    depends_on: []
+  - name: activity_score
+    description: User activity score
+    type: float
+    depends_on: []
