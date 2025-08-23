@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DAG Generator Table Schema",
+  "description": "Schema for validating table definition YAML files in the DAG generator",
+  "type": "object",
+  "required": ["group", "table", "columns"],
+  "properties": {
+    "group": {
+      "type": "string",
+      "description": "The group/schema this table belongs to",
+      "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+      "minLength": 1,
+      "maxLength": 50,
+      "examples": ["src", "stg", "int", "mart", "raw", "analytics", "reporting"]
+    },
+    "table": {
+      "type": "string",
+      "description": "The name of the table",
+      "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description of what this table represents"
+    },
+    "columns": {
+      "type": "array",
+      "description": "List of columns in this table",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "depends_on"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the column",
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional description of what this column represents"
+          },
+          "depends_on": {
+            "type": "array",
+            "description": "List of columns this column depends on (empty for source columns)",
+            "items": {
+              "type": "string",
+              "description": "Fully qualified column name in format 'group.table.column'",
+              "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*\\.[a-zA-Z_][a-zA-Z0-9_]*\\.[a-zA-Z_][a-zA-Z0-9_]*$"
+            },
+            "uniqueItems": true
+          },
+          "data_type": {
+            "type": "string",
+            "description": "Optional data type of the column",
+            "enum": ["string", "integer", "float", "boolean", "date", "datetime", "timestamp", "decimal"]
+          },
+          "nullable": {
+            "type": "boolean",
+            "description": "Whether the column can contain null values",
+            "default": true
+          },
+          "primary_key": {
+            "type": "boolean",
+            "description": "Whether this column is part of the primary key",
+            "default": false
+          },
+          "foreign_key": {
+            "type": "string",
+            "description": "Reference to another table's column if this is a foreign key",
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*\\.[a-zA-Z_][a-zA-Z0-9_]*\\.[a-zA-Z_][a-zA-Z0-9_]*$"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "group": "src",
+      "table": "customers",
+      "description": "Raw customer data from external system",
+      "columns": [
+        {
+          "name": "customer_id",
+          "description": "Unique identifier for each customer",
+          "depends_on": [],
+          "data_type": "integer",
+          "nullable": false,
+          "primary_key": true
+        },
+        {
+          "name": "customer_email",
+          "description": "Email address of the customer",
+          "depends_on": [],
+          "data_type": "string",
+          "nullable": false
+        }
+      ]
+    },
+    {
+      "group": "stg",
+      "table": "customers",
+      "description": "Cleaned and standardized customer data",
+      "columns": [
+        {
+          "name": "customer_id",
+          "description": "Cleaned customer identifier",
+          "depends_on": ["src.customers.customer_id"],
+          "data_type": "integer",
+          "nullable": false,
+          "primary_key": true
+        },
+        {
+          "name": "customer_email",
+          "description": "Standardized customer email",
+          "depends_on": ["src.customers.customer_email"],
+          "data_type": "string",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

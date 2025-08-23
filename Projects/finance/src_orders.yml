@@ -2,12 +2,17 @@ group: src
 table: orders
 columns:
   - name: order_id
+    description: "Unique identifier for each order"
     depends_on: []
   - name: user_id
+    description: "Foreign key reference to the customer who placed the order"
     depends_on: []
   - name: order_date
+    description: "Date and time when the order was placed"
     depends_on: []
   - name: total_amount
+    description: "Total monetary value of the order including taxes and fees"
     depends_on: []
   - name: status
+    description: "Current status of the order (e.g., pending, shipped, delivered, cancelled)"
     depends_on: []

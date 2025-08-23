@@ -2,12 +2,17 @@ group: src
 table: customers
 columns:
   - name: customer_id
+    description: "Unique identifier for each customer"
     depends_on: []
   - name: customer_name
+    description: "Full name of the customer"
     depends_on: []
   - name: customer_email
+    description: "Email address of the customer"
     depends_on: []
   - name: customer_segment
+    description: "Customer segmentation category (e.g., Premium, Standard, Basic)"
     depends_on: []
   - name: registration_date
+    description: "Date when the customer registered with the service"
     depends_on: []

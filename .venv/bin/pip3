@@ -1,4 +1,4 @@
-#!/home/brodiemilli/Projects/dag_generator/.venv/bin/python
+#!/home/brodiemilli/Projects/dag_generator/.venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

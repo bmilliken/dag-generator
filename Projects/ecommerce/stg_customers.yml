@@ -1,7 +1,0 @@
-group: stg
-table: customers
-columns:
-  - name: customer_id
-    depends_on: [src.customers_raw.customer_id]     # stg -> src
-  - name: email
-    depends_on: [src.customers_raw.email]

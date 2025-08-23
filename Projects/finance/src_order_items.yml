@@ -2,12 +2,17 @@ group: src
 table: order_items
 columns:
   - name: item_id
+    description: "Unique identifier for each order item line"
     depends_on: []
   - name: order_id
+    description: "Foreign key reference to the order this item belongs to"
     depends_on: []
   - name: product_id
+    description: "Foreign key reference to the product being ordered"
     depends_on: []
   - name: quantity
+    description: "Number of units of the product ordered"
     depends_on: []
   - name: unit_price
+    description: "Price per unit of the product at the time of order"
     depends_on: []
