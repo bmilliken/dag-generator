@@ -6,6 +6,7 @@ through HTTP endpoints.
 """
 
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import sys
 import os
 
@@ -17,14 +18,15 @@ from dag_assembler import DAGAssembler
 from json_exporter import JSONExporter
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # ====================================
 # CONFIGURATION - Auto-select first available project
 # ====================================
 
 def get_first_available_project():
-    """Get the first available project from the Projects directory."""
-    projects_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Projects")
+    """Get the first available project from the projects directory."""
+    projects_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "projects")
     
     if not os.path.exists(projects_dir):
         return None
@@ -71,7 +73,7 @@ def initialize_dag(project_name=None):
     try:
         assembler = DAGAssembler()
         # Assemble from the specified project
-        project_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Projects", current_project)
+        project_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "projects", current_project)
         print(f"🎯 Loading project from: {project_path}")
         
         # Check if project directory exists
@@ -81,7 +83,7 @@ def initialize_dag(project_name=None):
             if fallback_project and fallback_project != current_project:
                 print(f"⚠️  Project '{current_project}' not found, falling back to '{fallback_project}'")
                 current_project = fallback_project
-                project_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Projects", current_project)
+                project_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "projects", current_project)
             else:
                 raise FileNotFoundError(f"Project directory not found: {project_path}")
         
@@ -115,8 +117,8 @@ def get_current_project():
         JSON: Current project details and available projects
     """
     try:
-        # List available projects in the Projects directory
-        projects_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Projects")
+        # List available projects in the projects directory
+        projects_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "projects")
         available_projects = []
         
         if os.path.exists(projects_dir):
@@ -148,7 +150,7 @@ def set_project(project_name):
     
     try:
         # Check if project exists
-        projects_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Projects")
+        projects_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "projects")
         project_path = os.path.join(projects_dir, project_name)
         
         if not os.path.exists(project_path):
@@ -353,7 +355,7 @@ if __name__ == '__main__':
     print("  GET  /groups                    - List all groups")
     print("  GET  /stats                     - DAG statistics")
     
-    print(f"\n🌐 Server starting on http://localhost:5000")
+    print(f"\n🌐 Server starting on http://localhost:5002")
     print("Press Ctrl+C to stop the server")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5002)
