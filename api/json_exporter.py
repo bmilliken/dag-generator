@@ -87,55 +87,19 @@ class JSONExporter:
         if table is None:
             return {"error": f"Table '{table_name}' not found"}
         
-        # Collect all related tables (including ultimate sources and targets)
-        related_tables = set([table])
-        
-        # Add all ultimate source tables (recursively)
-        def add_sources(t):
-            for dep in t.dependencies:
-                if dep not in related_tables:
-                    related_tables.add(dep)
-                    add_sources(dep)  # Recursively add sources
-        
-        # Add all ultimate target tables (recursively)  
-        def add_targets(t):
-            for dep in t.dependents:
-                if dep not in related_tables:
-                    related_tables.add(dep)
-                    add_targets(dep)  # Recursively add targets
-        
-        add_sources(table)
-        add_targets(table)
-        
-        # Group related tables by group name
-        groups_dict = {}
-        for t in related_tables:
-            if t.group not in groups_dict:
-                groups_dict[t.group] = []
-            groups_dict[t.group].append(t.name)
-        
-        # Build groups list
-        groups = [
-            {
-                "group": group_name,
-                "tables": sorted(table_names)
-            }
-            for group_name, table_names in sorted(groups_dict.items())
-        ]
-        
-        # Build ALL connections involving any of the related tables
-        connections = []
-        for t in related_tables:
-            for dep in t.dependencies:
-                if dep in related_tables:  # Only include connections between related tables
-                    connections.append({
-                        "from": dep.get_full_name(),
-                        "to": t.get_full_name()
-                    })
+        # Collect all tables connected to this table through column dependencies and dependents
+        connected_tables = set()
         
         # Build column lineage information for the target table
         columns_info = []
         for column in table.columns:
+            # Get all columns connected to this column (dependencies and dependents)
+            all_connected_columns = column.get_all_connected_columns()
+            
+            # Add tables from all connected columns to our set
+            for connected_col in all_connected_columns:
+                connected_tables.add(connected_col.table)
+            
             # Get immediate dependencies
             immediate_dependencies = column.get_prev_columns()
             immediate_deps_info = [
@@ -166,6 +130,35 @@ class JSONExporter:
             }
             
             columns_info.append(column_info)
+        
+        # Add the target table itself to the connected tables
+        connected_tables.add(table)
+        
+        # Build connections between all connected tables
+        connections = []
+        for connected_table in connected_tables:
+            for dep_table in connected_table.dependencies:
+                if dep_table in connected_tables:  # Only include connections between tables in our set
+                    connections.append({
+                        "from": dep_table.get_full_name(),
+                        "to": connected_table.get_full_name()
+                    })
+        
+        # Group connected tables by group name for groups output
+        groups_dict = {}
+        for connected_table in connected_tables:
+            if connected_table.group not in groups_dict:
+                groups_dict[connected_table.group] = []
+            groups_dict[connected_table.group].append(connected_table.name)
+        
+        # Build groups list
+        groups = [
+            {
+                "group": group_name,
+                "tables": sorted(table_names)
+            }
+            for group_name, table_names in sorted(groups_dict.items())
+        ]
         
         return {
             "target_table": table.get_full_name(),
