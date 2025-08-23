@@ -254,19 +254,7 @@
   font-weight: 500;
 }
 
-/* Lineage Highlighting Styles */
-.react-flow__node.selected-table .table-node {
-  border: 3px solid #3b82f6 !important;
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4) !important;
-  transform: scale(1.05);
-  transition: all 0.3s ease;
-}
-
-.react-flow__node.lineage-table .table-node {
-  border: 2px solid #10b981 !important;
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3) !important;
-  transition: all 0.3s ease;
-}
+/* Lineage Highlighting Styles - Selected and lineage tables stay at full brightness naturally */
 
 .react-flow__node.faded-table {
   opacity: 0.3 !important;
