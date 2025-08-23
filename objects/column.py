@@ -8,7 +8,7 @@ to build a complete lineage graph for data transformations.
 from typing import Set, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from table import Table
+    from .table import Table
 
 
 class Column:

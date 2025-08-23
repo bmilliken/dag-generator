@@ -8,7 +8,7 @@ to build a complete lineage graph for data transformations.
 from typing import Set, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from column import Column
+    from .column import Column
 
 
 class Table:
@@ -60,7 +60,7 @@ class Table:
         self.dependents.add(table)
         table.dependencies.add(self)
     
-    def get_previous_columns(self) -> Set[Column]:
+    def get_previous_columns(self) -> Set['Column']:
         """
         Get all columns from tables that this table depends on.
         Returns the set of all columns that this table is built from.
@@ -73,7 +73,7 @@ class Table:
             previous_columns.update(table.columns)
         return previous_columns
     
-    def get_source_columns(self) -> Set[Column]:
+    def get_source_columns(self) -> Set['Column']:
         """
         Get all source columns that this table ultimately sources its data from.
         Recursively traverses the dependency chain to find all source columns.
@@ -100,7 +100,7 @@ class Table:
         _collect_source_columns(self)
         return source_columns
     
-    def get_column_by_name(self, column_name: str) -> Column:
+    def get_column_by_name(self, column_name: str) -> 'Column':
         """
         Get a column from this table by name.
         
@@ -162,3 +162,14 @@ class Table:
                 connected_tables.add(connected_column.table)
         
         return connected_tables
+    
+    def add_column(self, column: 'Column') -> None:
+        """
+        Add a column to this table.
+        
+        Args:
+            column (Column): The column to add to this table
+        """
+        if column not in self.columns:
+            self.columns.append(column)
+            column.table = self

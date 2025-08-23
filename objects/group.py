@@ -8,8 +8,8 @@ to organize the data transformation pipeline.
 from typing import List, Set, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from table import Table
-    from column import Column
+    from .table import Table
+    from .column import Column
 
 
 class Group:
