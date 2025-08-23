@@ -266,79 +266,54 @@ const DagFlow: React.FC = () => {
       console.log('Lineage data:', lineageData);
       console.log('Selected table:', tableName);
       
-      // Apply CSS classes directly without changing React Flow state
-      // This approach won't trigger re-layout
-      setTimeout(() => {
-        // Update node styles
-        const nodeElements = document.querySelectorAll('.react-flow__node');
-        nodeElements.forEach((nodeEl: any) => {
-          const nodeId = nodeEl.getAttribute('data-id');
-          if (nodeId) {
-            const [groupName, tableNameFromNode] = nodeId.split('.');
-            const isInLineage = lineageData.groups.some((group: any) => 
-              group.group === groupName && group.tables.includes(tableNameFromNode)
-            );
-            const isSelected = tableName === tableNameFromNode;
-            
-            // Clear existing lineage classes
-            nodeEl.classList.remove('selected-table', 'lineage-table', 'faded-table');
-            
-            // Apply new classes
-            if (isSelected) {
-              nodeEl.classList.add('selected-table');
-            } else if (isInLineage) {
-              nodeEl.classList.add('lineage-table');
-            } else {
-              nodeEl.classList.add('faded-table');
-            }
-          }
-        });
-        
-        // Update edge styles
-        const edgeElements = document.querySelectorAll('.react-flow__edge');
-        console.log('Found edge elements:', edgeElements.length); // Debug log
-        console.log('Current edges:', edges); // Debug log
-        console.log('Lineage connections:', lineageData.connections); // Debug log
-        
-        edgeElements.forEach((edgeEl: any, index: number) => {
-          console.log(`Processing edge element ${index}:`, edgeEl); // Debug log
+      // Update node styles using React Flow's state management
+      setNodes(currentNodes => 
+        currentNodes.map(node => {
+          const [groupName, tableNameFromNode] = node.id.split('.');
+          const isInLineage = lineageData.groups.some((group: any) => 
+            group.group === groupName && group.tables.includes(tableNameFromNode)
+          );
+          const isSelected = tableName === tableNameFromNode;
           
-          // Try multiple ways to identify the edge
-          const edgeId = edgeEl.getAttribute('data-id') || edgeEl.dataset?.id;
-          
-          // If we can't find data-id, use the index to match with our edges array
-          let edge = null;
-          if (edgeId) {
-            edge = edges.find(e => e.id === edgeId);
-          } else if (index < edges.length) {
-            edge = edges[index];
-          }
-          
-          console.log(`Edge ${index}: id=${edgeId}, edge=`, edge); // Debug log
-          
-          if (edge) {
-            const isLineageEdge = lineageData.connections.some((lineageConn: any) => 
-              lineageConn.from === edge.source && lineageConn.to === edge.target
-            );
-            
-            console.log(`Edge ${edge.source} -> ${edge.target}: isLineageEdge=${isLineageEdge}`); // Debug log
-            
-            // Clear existing classes
-            edgeEl.classList.remove('lineage-edge', 'faded-edge');
-            
-            // Apply new classes
-            if (isLineageEdge) {
-              edgeEl.classList.add('lineage-edge');
-              console.log('Added lineage-edge class'); // Debug log
-            } else {
-              edgeEl.classList.add('faded-edge');
-              console.log('Added faded-edge class'); // Debug log
-            }
+          // Determine the appropriate class
+          let className = 'table-node';
+          if (isSelected) {
+            className += ' selected-table';
+          } else if (isInLineage) {
+            className += ' lineage-table';
           } else {
-            console.log('No edge data found for element', index); // Debug log
+            className += ' faded-table';
           }
-        });
-      }, 10);
+          
+          return {
+            ...node,
+            className: className,
+          };
+        })
+      );
+      
+      // Update edge styles using React Flow's state management
+      setEdges(currentEdges => 
+        currentEdges.map(edge => {
+          const isLineageEdge = lineageData.connections.some((lineageConn: any) => 
+            lineageConn.from === edge.source && lineageConn.to === edge.target
+          );
+          
+          return {
+            ...edge,
+            className: isLineageEdge ? 'lineage-edge' : 'faded-edge',
+            style: {
+              stroke: isLineageEdge ? '#3b82f6' : '#94a3b8',
+              strokeWidth: isLineageEdge ? 4 : 2,
+              opacity: isLineageEdge ? 1 : 0.3,
+            },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: isLineageEdge ? '#3b82f6' : '#94a3b8',
+            }
+          };
+        })
+      );
       
     } catch (err) {
       console.error('Failed to fetch lineage:', err);
@@ -349,20 +324,30 @@ const DagFlow: React.FC = () => {
   const clearLineage = () => {
     setSelectedTable(null);
     
-    // Clear all lineage classes directly from DOM without triggering re-layout
-    setTimeout(() => {
-      // Clear node classes
-      const nodeElements = document.querySelectorAll('.react-flow__node');
-      nodeElements.forEach((nodeEl: any) => {
-        nodeEl.classList.remove('selected-table', 'lineage-table', 'faded-table');
-      });
-      
-      // Clear edge classes
-      const edgeElements = document.querySelectorAll('.react-flow__edge');
-      edgeElements.forEach((edgeEl: any) => {
-        edgeEl.classList.remove('lineage-edge', 'faded-edge');
-      });
-    }, 10);
+    // Reset all nodes to normal styling
+    setNodes(currentNodes => 
+      currentNodes.map(node => ({
+        ...node,
+        className: 'table-node',
+      }))
+    );
+    
+    // Reset all edges to normal styling
+    setEdges(currentEdges => 
+      currentEdges.map(edge => ({
+        ...edge,
+        className: '',
+        style: {
+          stroke: '#64748b',
+          strokeWidth: 3,
+          opacity: 1,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#64748b',
+        }
+      }))
+    );
   };
 
   // Handle node click

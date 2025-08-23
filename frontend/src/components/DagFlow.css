@@ -119,17 +119,12 @@
   padding: 0;
   min-width: 120px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
 }
 
 .table-node:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   transform: translateY(-1px);
-}
-
-.table-node.selected {
-  border-color: #007acc;
-  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
+  transition: all 0.2s ease; /* Only apply transition on hover */
 }
 
 .table-node-content {
@@ -160,10 +155,15 @@
 }
 
 /* React Flow Custom Styles */
+.react-flow__edge {
+  pointer-events: none !important; /* Disable clicking on arrows/edges */
+}
+
 .react-flow__edge-path {
   stroke: #64748b;
   stroke-width: 3;
   transition: stroke 0.2s ease;
+  pointer-events: none !important; /* Disable clicking on arrow paths */
 }
 
 .react-flow__edge:hover .react-flow__edge-path {
@@ -178,6 +178,12 @@
 
 .react-flow__edge .react-flow__edge-marker {
   fill: #64748b;
+  pointer-events: none !important; /* Disable clicking on arrow markers */
+}
+
+/* Ensure normal edge markers match the default arrow color */
+.react-flow__edge:not(.lineage-edge):not(.faded-edge) .react-flow__edge-marker {
+  fill: #64748b !important;
 }
 
 /* MiniMap Styling */
@@ -258,14 +264,24 @@
 
 .react-flow__node.faded-table {
   opacity: 0.3 !important;
-  transition: opacity 0.3s ease;
+}
+
+/* Lineage edges should be highlighted with stronger styling */
+.react-flow__edge.lineage-edge .react-flow__edge-path {
+  stroke: #3b82f6 !important;
+  stroke-width: 4 !important;
+  opacity: 1 !important;
+}
+
+.react-flow__edge.lineage-edge .react-flow__edge-marker {
+  fill: #3b82f6 !important;
+  opacity: 1 !important;
 }
 
 .react-flow__edge.faded-edge .react-flow__edge-path {
   opacity: 0.3 !important;
   stroke-width: 2 !important;
   stroke: #94a3b8 !important;
-  transition: all 0.3s ease;
 }
 
 .react-flow__edge.faded-edge .react-flow__edge-marker {
