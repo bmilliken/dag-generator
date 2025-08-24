@@ -14,6 +14,7 @@ import type { Node, Edge, Connection } from 'reactflow';
 import 'reactflow/dist/style.css';
 import axios from 'axios';
 import TableNode from './TableNode';
+import TableDetailsPanel from './TableDetailsPanel';
 import './DagFlow.css';
 
 const nodeTypes = {
@@ -37,6 +38,33 @@ interface ProjectInfo {
   initialized: boolean;
 }
 
+interface TableDetails {
+  target_table: string;
+  columns_lineage: Array<{
+    column: {
+      full_path: string;
+      description: string;
+      is_source_column: boolean;
+      immediate_dependencies?: Array<{
+        full_path: string;
+        description: string;
+      }>;
+      source_columns?: Array<{
+        full_path: string;
+        description: string;
+      }>;
+    };
+  }>;
+  groups: Array<{
+    group: string;
+    tables: string[];
+  }>;
+  connections: Array<{
+    from: string;
+    to: string;
+  }>;
+}
+
 const DagFlow: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -44,6 +72,8 @@ const DagFlow: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [projectInfo, setProjectInfo] = useState<ProjectInfo | null>(null);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  const [tableDetails, setTableDetails] = useState<TableDetails | null>(null);
+  const [showDetailsPanel, setShowDetailsPanel] = useState(false);
   // Removed lineageData state - we don't need it stored in React state
 
   const API_BASE = 'http://localhost:5002';
@@ -263,6 +293,8 @@ const DagFlow: React.FC = () => {
       const response = await axios.get(`${API_BASE}/table/${tableName}/lineage`);
       const lineageData = response.data;
       setSelectedTable(tableName);
+      setTableDetails(lineageData);
+      setShowDetailsPanel(true);
       console.log('Lineage data:', lineageData);
       console.log('Selected table:', tableName);
       
@@ -323,6 +355,8 @@ const DagFlow: React.FC = () => {
   // Clear lineage selection
   const clearLineage = () => {
     setSelectedTable(null);
+    setTableDetails(null);
+    setShowDetailsPanel(false);
     
     // Reset all nodes to normal styling
     setNodes(currentNodes => 
@@ -444,14 +478,14 @@ const DagFlow: React.FC = () => {
           <span>Connections: {edges.length}</span>
           {selectedTable && (
             <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>
-              Lineage: {selectedTable}
+              Selected: {selectedTable}
             </span>
           )}
         </div>
         <div className="header-buttons">
           {selectedTable && (
             <button onClick={clearLineage} className="clear-lineage-button">
-              Clear Lineage
+              Clear Selection
             </button>
           )}
           <button onClick={fetchDagData} className="refresh-button">
@@ -498,6 +532,12 @@ const DagFlow: React.FC = () => {
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e0e0e0" />
         </ReactFlow>
       </div>
+      
+      <TableDetailsPanel
+        tableDetails={tableDetails}
+        isVisible={showDetailsPanel}
+        onClose={() => setShowDetailsPanel(false)}
+      />
     </div>
   );
 };

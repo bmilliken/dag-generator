@@ -120,14 +120,34 @@ class JSONExporter:
                 for src_col in sorted(source_columns, key=lambda c: c.get_full_name())
             ]
             
+            # Determine if this column is a source column (no immediate dependencies)
+            is_source_column = len(immediate_dependencies) == 0
+            
             column_info = {
                 "column": {
                     "full_path": column.get_full_name(),
                     "description": column.description,
-                    "immediate_dependencies": immediate_deps_info,
-                    "source_columns": source_info
+                    "is_source_column": is_source_column
                 }
             }
+            
+            # If it's a source column, we don't need immediate_dependencies or source_columns
+            # since they would be empty or just reference itself
+            if is_source_column:
+                # For source columns, we only include the basic info with the flag
+                pass  # column_info already has what we need
+            else:
+                # For non-source columns, check if immediate dependencies are the same as source columns
+                immediate_deps_paths = set(dep["full_path"] for dep in immediate_deps_info)
+                source_paths = set(src["full_path"] for src in source_info)
+                
+                if immediate_deps_paths == source_paths:
+                    # If immediate dependencies are the same as source columns, only show source columns
+                    column_info["column"]["source_columns"] = source_info
+                else:
+                    # Otherwise, include both immediate dependencies and source columns
+                    column_info["column"]["immediate_dependencies"] = immediate_deps_info
+                    column_info["column"]["source_columns"] = source_info
             
             columns_info.append(column_info)
         
@@ -164,7 +184,7 @@ class JSONExporter:
             "target_table": table.get_full_name(),
             "groups": groups,
             "connections": sorted(connections, key=lambda x: (x["from"], x["to"])),
-            "columns_lineage": sorted(columns_info, key=lambda x: x["column"]["full_path"])
+            "columns_lineage": columns_info  # Preserve original YAML order
         }
     
     def table_lineage_json_string(self, table_name: str) -> str:
