@@ -74,12 +74,11 @@ const DagFlow: React.FC = () => {
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [tableDetails, setTableDetails] = useState<TableDetails | null>(null);
   const [showDetailsPanel, setShowDetailsPanel] = useState(false);
-  // Removed lineageData state - we don't need it stored in React state
 
   const API_BASE = 'http://localhost:5002';
 
-  // Function to generate consistent colors for groups
-  const getGroupColor = (groupName: string): string => {
+  // Memoize the group color function to avoid recalculation
+  const getGroupColor = useCallback((groupName: string): string => {
     // Lighter, more readable color palette
     const colors = [
       '#3b82f6', // Blue
@@ -105,7 +104,7 @@ const DagFlow: React.FC = () => {
     // Use absolute value and modulo to get consistent index
     const colorIndex = Math.abs(hash) % colors.length;
     return colors[colorIndex];
-  };
+  }, []);
 
   // Fetch project info
   const fetchProjectInfo = async () => {
@@ -287,8 +286,77 @@ const DagFlow: React.FC = () => {
     return { nodes, edges };
   };
 
-  // Fetch lineage data for a specific table
-  const fetchLineage = async (tableName: string) => {
+  // Optimized function to update node styles without causing re-renders during drag
+  const updateNodeStyles = useCallback((lineageData: any, selectedTable: string) => {
+    setNodes(currentNodes => 
+      currentNodes.map(node => {
+        const [groupName, tableNameFromNode] = node.id.split('.');
+        const isInLineage = lineageData.groups.some((group: any) => 
+          group.group === groupName && group.tables.includes(tableNameFromNode)
+        );
+        const isSelected = selectedTable === tableNameFromNode;
+        
+        // Only update if className would actually change
+        let newClassName = 'table-node';
+        if (isSelected) {
+          newClassName += ' selected-table';
+        } else if (isInLineage) {
+          newClassName += ' lineage-table';
+        } else {
+          newClassName += ' faded-table';
+        }
+        
+        // Avoid unnecessary re-renders by checking if className actually changed
+        if (node.className === newClassName) {
+          return node;
+        }
+        
+        return {
+          ...node,
+          className: newClassName,
+        };
+      })
+    );
+  }, [setNodes]);
+
+  // Optimized function to update edge styles
+  const updateEdgeStyles = useCallback((lineageData: any) => {
+    setEdges(currentEdges => 
+      currentEdges.map(edge => {
+        const isLineageEdge = lineageData.connections.some((lineageConn: any) => 
+          lineageConn.from === edge.source && lineageConn.to === edge.target
+        );
+        
+        const newClassName = isLineageEdge ? 'lineage-edge' : 'faded-edge';
+        const newStyle = {
+          stroke: isLineageEdge ? '#3b82f6' : '#94a3b8',
+          strokeWidth: isLineageEdge ? 4 : 2,
+          opacity: isLineageEdge ? 1 : 0.3,
+        };
+        
+        // Avoid unnecessary re-renders by checking if styles actually changed
+        if (edge.className === newClassName && 
+            edge.style?.stroke === newStyle.stroke &&
+            edge.style?.strokeWidth === newStyle.strokeWidth &&
+            edge.style?.opacity === newStyle.opacity) {
+          return edge;
+        }
+        
+        return {
+          ...edge,
+          className: newClassName,
+          style: newStyle,
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: isLineageEdge ? '#3b82f6' : '#94a3b8',
+          }
+        };
+      })
+    );
+  }, [setEdges]);
+
+  // Fetch lineage data for a specific table (optimized)
+  const fetchLineage = useCallback(async (tableName: string) => {
     try {
       const response = await axios.get(`${API_BASE}/table/${tableName}/lineage`);
       const lineageData = response.data;
@@ -298,93 +366,80 @@ const DagFlow: React.FC = () => {
       console.log('Lineage data:', lineageData);
       console.log('Selected table:', tableName);
       
-      // Update node styles using React Flow's state management
-      setNodes(currentNodes => 
-        currentNodes.map(node => {
-          const [groupName, tableNameFromNode] = node.id.split('.');
-          const isInLineage = lineageData.groups.some((group: any) => 
-            group.group === groupName && group.tables.includes(tableNameFromNode)
-          );
-          const isSelected = tableName === tableNameFromNode;
-          
-          // Determine the appropriate class
-          let className = 'table-node';
-          if (isSelected) {
-            className += ' selected-table';
-          } else if (isInLineage) {
-            className += ' lineage-table';
-          } else {
-            className += ' faded-table';
-          }
-          
-          return {
-            ...node,
-            className: className,
-          };
-        })
-      );
-      
-      // Update edge styles using React Flow's state management
-      setEdges(currentEdges => 
-        currentEdges.map(edge => {
-          const isLineageEdge = lineageData.connections.some((lineageConn: any) => 
-            lineageConn.from === edge.source && lineageConn.to === edge.target
-          );
-          
-          return {
-            ...edge,
-            className: isLineageEdge ? 'lineage-edge' : 'faded-edge',
-            style: {
-              stroke: isLineageEdge ? '#3b82f6' : '#94a3b8',
-              strokeWidth: isLineageEdge ? 4 : 2,
-              opacity: isLineageEdge ? 1 : 0.3,
-            },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              color: isLineageEdge ? '#3b82f6' : '#94a3b8',
-            }
-          };
-        })
-      );
+      // Use optimized update functions
+      updateNodeStyles(lineageData, tableName);
+      updateEdgeStyles(lineageData);
       
     } catch (err) {
       console.error('Failed to fetch lineage:', err);
     }
-  };
+  }, [API_BASE, updateNodeStyles, updateEdgeStyles]);
 
-  // Clear lineage selection
-  const clearLineage = () => {
+  // Clear lineage selection (optimized)
+  const clearLineage = useCallback(() => {
     setSelectedTable(null);
     setTableDetails(null);
     setShowDetailsPanel(false);
     
-    // Reset all nodes to normal styling
+    // Reset all nodes to normal styling (optimized)
     setNodes(currentNodes => 
-      currentNodes.map(node => ({
-        ...node,
-        className: 'table-node',
-      }))
+      currentNodes.map(node => {
+        if (node.className === 'table-node') {
+          return node; // No change needed
+        }
+        return {
+          ...node,
+          className: 'table-node',
+        };
+      })
     );
     
-    // Reset all edges to normal styling
+    // Reset all edges to normal styling (optimized)
     setEdges(currentEdges => 
-      currentEdges.map(edge => ({
-        ...edge,
-        className: '',
-        style: {
+      currentEdges.map(edge => {
+        const newStyle = {
           stroke: '#64748b',
           strokeWidth: 3,
           opacity: 1,
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: '#64748b',
+        };
+        
+        if (!edge.className && 
+            edge.style?.stroke === newStyle.stroke &&
+            edge.style?.strokeWidth === newStyle.strokeWidth &&
+            edge.style?.opacity === newStyle.opacity) {
+          return edge; // No change needed
         }
-      }))
+        
+        return {
+          ...edge,
+          className: '',
+          style: newStyle,
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#64748b',
+          }
+        };
+      })
     );
-  };
+  }, [setNodes, setEdges]);
 
-  // Handle node click
+  // Optimized nodes change handler with drag performance improvements
+  const handleNodesChange = useCallback((changes: any[]) => {
+    // Check if any change is a drag operation
+    const isDragOperation = changes.some(change => 
+      change.type === 'position' && change.dragging
+    );
+    
+    if (isDragOperation) {
+      // During drag operations, only update positions without triggering expensive operations
+      onNodesChange(changes);
+    } else {
+      // For non-drag operations, use the normal handler
+      onNodesChange(changes);
+    }
+  }, [onNodesChange]);
+
+  // Handle node click (optimized)
   const onNodeClick = useCallback((_event: React.MouseEvent, node: any) => {
     if (selectedTable === node.data.label) {
       // If clicking the same table, clear selection
@@ -394,7 +449,7 @@ const DagFlow: React.FC = () => {
       const tableName = node.data.label;
       fetchLineage(tableName);
     }
-  }, [selectedTable]);
+  }, [selectedTable, clearLineage, fetchLineage]);
 
   // Handle connection creation
   const onConnect = useCallback(
@@ -519,13 +574,16 @@ const DagFlow: React.FC = () => {
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange}
+          onNodesChange={handleNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
           fitView
           attributionPosition="bottom-left"
-          onNodeClick={onNodeClick} // Add onNodeClick handler
+          onNodeClick={onNodeClick}
+          nodesDraggable={true}
+          nodesConnectable={false}
+          elementsSelectable={true}
         >
           <Controls />
           <MiniMap />

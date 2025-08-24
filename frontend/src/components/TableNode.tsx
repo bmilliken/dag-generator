@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Handle, Position } from 'reactflow';
 import type { NodeProps } from 'reactflow';
 
@@ -12,7 +12,7 @@ interface TableNodeData {
   isFaded?: boolean;
 }
 
-const TableNode: React.FC<NodeProps<TableNodeData>> = ({ data }) => {
+const TableNode: React.FC<NodeProps<TableNodeData>> = memo(({ data }) => {
   const nodeClasses = [
     'table-node',
     data.isSelected ? 'selected-table' : '',
@@ -31,6 +31,16 @@ const TableNode: React.FC<NodeProps<TableNodeData>> = ({ data }) => {
       <Handle type="source" position={Position.Right} />
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  // Only re-render if the data that affects rendering has actually changed
+  return (
+    prevProps.data.label === nextProps.data.label &&
+    prevProps.data.groupColor === nextProps.data.groupColor &&
+    prevProps.data.isSelected === nextProps.data.isSelected &&
+    prevProps.data.isInLineage === nextProps.data.isInLineage &&
+    prevProps.data.isFaded === nextProps.data.isFaded
+  );
+});
 
 export default TableNode;

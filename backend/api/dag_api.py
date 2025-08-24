@@ -135,14 +135,27 @@ def get_current_project():
     """
     try:
         # List available projects in the projects directory
-        projects_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "projects")
+        projects_dir = get_projects_dir()
         available_projects = []
+        
+        print(f"🔍 Debug: projects_dir = {projects_dir}")
+        print(f"🔍 Debug: exists = {os.path.exists(projects_dir)}")
         
         if os.path.exists(projects_dir):
             for item in os.listdir(projects_dir):
                 project_path = os.path.join(projects_dir, item)
+                print(f"🔍 Debug: checking item = {item}, path = {project_path}")
                 if os.path.isdir(project_path):
-                    available_projects.append(item)
+                    try:
+                        # Check if project has YAML files
+                        yaml_files = [f for f in os.listdir(project_path) if f.endswith('.yml') or f.endswith('.yaml')]
+                        print(f"🔍 Debug: {item} has YAML files: {yaml_files}")
+                        if yaml_files:
+                            available_projects.append(item)
+                    except Exception as e:
+                        print(f"⚠️  Error checking project {item}: {e}")
+        
+        print(f"🔍 Debug: final available_projects = {available_projects}")
         
         return jsonify({
             "current_project": current_project,
@@ -150,6 +163,7 @@ def get_current_project():
             "initialized": exporter is not None
         })
     except Exception as e:
+        print(f"❌ Error in get_current_project: {e}")
         return jsonify({"error": f"Failed to get project info: {str(e)}"}), 500
 
 @app.route('/project/<project_name>', methods=['POST'])
@@ -167,13 +181,22 @@ def set_project(project_name):
     
     try:
         # Check if project exists
-        projects_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "projects")
+        projects_dir = get_projects_dir()
         project_path = os.path.join(projects_dir, project_name)
         
         if not os.path.exists(project_path):
+            # Get list of available projects for error response
+            available_projects = []
+            if os.path.exists(projects_dir):
+                for item in os.listdir(projects_dir):
+                    if os.path.isdir(os.path.join(projects_dir, item)):
+                        yaml_files = [f for f in os.listdir(os.path.join(projects_dir, item)) if f.endswith('.yml') or f.endswith('.yaml')]
+                        if yaml_files:
+                            available_projects.append(item)
+            
             return jsonify({
                 "error": f"Project '{project_name}' not found",
-                "available_projects": [d for d in os.listdir(projects_dir) if os.path.isdir(os.path.join(projects_dir, d))]
+                "available_projects": available_projects
             }), 404
         
         # Initialize DAG with new project

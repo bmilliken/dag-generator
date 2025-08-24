@@ -72,18 +72,20 @@ const TableDetailsPanel: React.FC<TableDetailsPanelProps> = ({
           return (
             <div key={index} className="column-item">
               <h3>{columnName}</h3>
+              {column.description && 
+               !column.description.startsWith('Column ') && 
+               <p className="description">{column.description}</p>}
               {column.key_type && (
                 <span className={`key-tag ${column.key_type}`}>
                   {column.key_type === 'primary' ? 'Primary Key' : 'Foreign Key'}
                 </span>
               )}
-              {column.description && 
-               !column.description.startsWith('Column ') && 
-               <p className="description">{column.description}</p>}
               
-              {column.is_source_column ? (
+              {column.is_source_column && (
                 <div className="source-indicator">Source column</div>
-              ) : (
+              )}
+              
+              {!column.is_source_column && (
                 <div className="dependencies">
                   {column.immediate_dependencies && column.immediate_dependencies.length > 0 && (
                     <div className="dep-section">

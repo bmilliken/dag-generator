@@ -97,20 +97,21 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   line-height: 1;
-  display: inline-block;
-  margin-bottom: 4px;
+  display: block;
+  width: fit-content;
+  margin-bottom: 8px;
 }
 
 .key-tag.primary {
-  background-color: #fef3c7;
-  color: #d97706;
-  border: 1px solid #f59e0b;
+  background-color: #fefce8;
+  color: #a16207;
+  border: 1px solid #eab308;
 }
 
 .key-tag.foreign {
-  background-color: #fdf2f8;
-  color: #be185d;
-  border: 1px solid #ec4899;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
 }
 
 .description {
@@ -136,8 +137,9 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   line-height: 1;
-  display: inline-block;
-  margin-bottom: 4px;
+  display: block;
+  width: fit-content;
+  margin-bottom: 8px;
 }
 
 .dependencies {

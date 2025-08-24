@@ -309,3 +309,25 @@
 .clear-lineage-button:hover {
   background: #dc2626;
 }
+
+/* Performance optimizations for dragging */
+.react-flow__node {
+  will-change: transform;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+.react-flow__node.react-flow__node-tableNode {
+  transition: none !important; /* Disable transitions during drag */
+}
+
+/* Optimize node rendering during drag operations */
+.react-flow__node-tableNode.dragging {
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Smooth transitions for non-drag operations */
+.react-flow__node-tableNode:not(.dragging) {
+  transition: all 0.2s ease;
+}
