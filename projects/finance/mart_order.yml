@@ -3,7 +3,7 @@ table: order
 description: "Data mart table providing a comprehensive view of order analytics and metrics"
 columns:
   - name: order
-    key_type: "primary"
+    key_type: primary
     depends_on: 
     - stg.enriched_orders.order_id
     - stg.enriched_orders.item_count

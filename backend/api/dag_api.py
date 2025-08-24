@@ -26,7 +26,12 @@ CORS(app)  # Enable CORS for all routes
 
 def get_first_available_project():
     """Get the first available project from the projects directory."""
-    projects_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "projects")
+    # Check if we're running in Docker (projects mounted at /app/projects)
+    if os.path.exists("/app/projects"):
+        projects_dir = "/app/projects"
+    else:
+        # Local development path
+        projects_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "projects")
     
     if not os.path.exists(projects_dir):
         return None
@@ -47,7 +52,19 @@ def get_first_available_project():
 DEFAULT_PROJECT = get_first_available_project() or "finance"
 TARGET_PROJECT = os.getenv("DAG_TARGET_PROJECT", DEFAULT_PROJECT)
 
-print(f"🎯 Available projects: {sorted([d for d in os.listdir(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'Projects')) if os.path.isdir(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'Projects', d))]) if os.path.exists(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'Projects')) else 'None'}")
+def get_projects_dir():
+    """Get the projects directory path."""
+    if os.path.exists("/app/projects"):
+        return "/app/projects"
+    else:
+        return os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "projects")
+
+projects_dir = get_projects_dir()
+available_projects = []
+if os.path.exists(projects_dir):
+    available_projects = sorted([d for d in os.listdir(projects_dir) if os.path.isdir(os.path.join(projects_dir, d))])
+
+print(f"🎯 Available projects: {available_projects}")
 print(f"🎯 Target project: {TARGET_PROJECT}")
 # ====================================
 
@@ -73,7 +90,7 @@ def initialize_dag(project_name=None):
     try:
         assembler = DAGAssembler()
         # Assemble from the specified project
-        project_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "projects", current_project)
+        project_path = os.path.join(get_projects_dir(), current_project)
         print(f"🎯 Loading project from: {project_path}")
         
         # Check if project directory exists
@@ -83,7 +100,7 @@ def initialize_dag(project_name=None):
             if fallback_project and fallback_project != current_project:
                 print(f"⚠️  Project '{current_project}' not found, falling back to '{fallback_project}'")
                 current_project = fallback_project
-                project_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "projects", current_project)
+                project_path = os.path.join(get_projects_dir(), current_project)
             else:
                 raise FileNotFoundError(f"Project directory not found: {project_path}")
         
