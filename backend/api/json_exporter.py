@@ -105,7 +105,8 @@ class JSONExporter:
             immediate_deps_info = [
                 {
                     "full_path": dep_col.get_full_name(),
-                    "description": dep_col.description
+                    "description": dep_col.description,
+                    "key_type": dep_col.key_type
                 }
                 for dep_col in sorted(immediate_dependencies, key=lambda c: c.get_full_name())
             ]
@@ -115,7 +116,8 @@ class JSONExporter:
             source_info = [
                 {
                     "full_path": src_col.get_full_name(),
-                    "description": src_col.description
+                    "description": src_col.description,
+                    "key_type": src_col.key_type
                 }
                 for src_col in sorted(source_columns, key=lambda c: c.get_full_name())
             ]
@@ -127,6 +129,7 @@ class JSONExporter:
                 "column": {
                     "full_path": column.get_full_name(),
                     "description": column.description,
+                    "key_type": column.key_type,
                     "is_source_column": is_source_column
                 }
             }
@@ -182,6 +185,7 @@ class JSONExporter:
         
         return {
             "target_table": table.get_full_name(),
+            "table_description": table.description,
             "groups": groups,
             "connections": sorted(connections, key=lambda x: (x["from"], x["to"])),
             "columns_lineage": columns_info  # Preserve original YAML order

@@ -143,9 +143,10 @@ class ObjectConstructor:
                 column_name = column_data['name']
                 column_key = f"{group_name}.{table_name}.{column_name}"
                 description = column_data.get('description', f"Column {column_name}")
+                key_type = column_data.get('key_type', "")
                 
                 # Create column with reference to table
-                column = Column(column_name, table, description)
+                column = Column(column_name, table, description, key_type)
                 
                 # Add to our collections
                 self.columns[column_key] = column

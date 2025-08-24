@@ -5,20 +5,24 @@ interface ColumnLineage {
   column: {
     full_path: string;
     description: string;
+    key_type?: string;
     is_source_column: boolean;
     immediate_dependencies?: Array<{
       full_path: string;
       description: string;
+      key_type?: string;
     }>;
     source_columns?: Array<{
       full_path: string;
       description: string;
+      key_type?: string;
     }>;
   };
 }
 
 interface TableDetails {
   target_table: string;
+  table_description?: string;
   columns_lineage: ColumnLineage[];
   groups: Array<{
     group: string;
@@ -51,7 +55,12 @@ const TableDetailsPanel: React.FC<TableDetailsPanelProps> = ({
   return (
     <div className={`details-panel ${isVisible ? 'visible' : ''}`}>
       <div className="panel-header">
-        <h2>{tableName}</h2>
+        <div className="header-content">
+          <h2>{tableName}</h2>
+          {tableDetails.table_description && (
+            <p className="table-description">{tableDetails.table_description}</p>
+          )}
+        </div>
         <button className="close-btn" onClick={onClose}>×</button>
       </div>
       
@@ -63,6 +72,11 @@ const TableDetailsPanel: React.FC<TableDetailsPanelProps> = ({
           return (
             <div key={index} className="column-item">
               <h3>{columnName}</h3>
+              {column.key_type && (
+                <span className={`key-tag ${column.key_type}`}>
+                  {column.key_type === 'primary' ? 'Primary Key' : 'Foreign Key'}
+                </span>
+              )}
               {column.description && 
                !column.description.startsWith('Column ') && 
                <p className="description">{column.description}</p>}

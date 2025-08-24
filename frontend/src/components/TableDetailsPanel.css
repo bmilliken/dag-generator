@@ -1,9 +1,9 @@
 .details-panel {
   position: fixed;
-  top: 60px; /* Start below the top bar */
+  top: 80px; /* Increased from 60px to avoid clipping with top bar */
   right: -400px;
   width: 400px;
-  height: calc(100vh - 60px); /* Adjust height to account for top offset */
+  height: calc(100vh - 80px); /* Adjusted height to account for new top offset */
   background: #ffffff;
   border-left: 1px solid #d1d5db;
   box-shadow: -2px 0 8px rgba(0,0,0,0.15);
@@ -20,7 +20,7 @@
 .panel-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: 16px;
   border-bottom: 1px solid #e5e7eb;
   background: #f9fafb;
@@ -29,11 +29,25 @@
   z-index: 10;
 }
 
+.header-content {
+  flex: 1;
+  margin-right: 12px;
+}
+
 .panel-header h2 {
-  margin: 0;
+  margin: 0 0 4px 0;
   font-size: 1.25rem;
   font-weight: 600;
   color: #111827;
+}
+
+.panel-header .table-description {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-style: italic;
+  font-weight: 400;
 }
 
 .close-btn {
@@ -69,14 +83,38 @@
 }
 
 .column-item h3 {
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
   font-size: 1rem;
   font-weight: 600;
   color: #111827;
 }
 
+.key-tag {
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+.key-tag.primary {
+  background-color: #fef3c7;
+  color: #d97706;
+  border: 1px solid #f59e0b;
+}
+
+.key-tag.foreign {
+  background-color: #fdf2f8;
+  color: #be185d;
+  border: 1px solid #ec4899;
+}
+
 .description {
-  margin: 0 0 12px 0;
+  margin: 0 0 8px 0;
   color: #4b5563;
   font-size: 0.875rem;
   line-height: 1.4;
@@ -88,15 +126,18 @@
 }
 
 .source-indicator {
-  padding: 6px 12px;
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
-  border-radius: 4px;
-  color: #1d4ed8;
-  font-size: 0.8rem;
-  font-weight: 500;
+  padding: 3px 8px;
+  background: #ecfdf5;
+  border: 1px solid #10b981;
+  border-radius: 3px;
+  color: #059669;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1;
   display: inline-block;
-  margin-top: 8px;
+  margin-bottom: 4px;
 }
 
 .dependencies {

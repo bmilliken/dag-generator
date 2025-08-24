@@ -1,8 +1,10 @@
 group: src
 table: customers
+description: "Source table containing customer profile and demographic information"
 columns:
   - name: customer_id
     description: "Unique identifier for each customer"
+    key_type: "primary"
     depends_on: []
   - name: customer_name
     description: "Full name of the customer"

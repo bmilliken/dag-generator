@@ -1,14 +1,18 @@
 group: src
 table: order_items
+description: "Source table containing individual line items for each order"
 columns:
   - name: item_id
     description: "Unique identifier for each order item line"
+    key_type: "primary"
     depends_on: []
   - name: order_id
     description: "Foreign key reference to the order this item belongs to"
+    key_type: "foreign"
     depends_on: []
   - name: product_id
     description: "Foreign key reference to the product being ordered"
+    key_type: "foreign"
     depends_on: []
   - name: quantity
     description: "Number of units of the product ordered"

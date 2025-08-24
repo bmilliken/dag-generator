@@ -19,11 +19,12 @@ class Column:
         name (str): The column name
         table (Table): The table object this column belongs to
         description (str): Optional description of what this column represents
+        key_type (str): Type of key (primary, foreign, or empty string)
         dependencies (Set[Column]): Set of columns this column depends on
         dependents (Set[Column]): Set of columns that depend on this column
     """
     
-    def __init__(self, name: str, table: 'Table', description: str = ""):
+    def __init__(self, name: str, table: 'Table', description: str = "", key_type: str = ""):
         """
         Initialize a Column object.
         
@@ -31,10 +32,12 @@ class Column:
             name (str): The column name
             table (Table): The table object this column belongs to
             description (str): Optional description of what this column represents
+            key_type (str): Type of key (primary, foreign, or empty string)
         """
         self.name = name
         self.table = table
         self.description = description
+        self.key_type = key_type
         self.dependencies: Set[Column] = set()
         self.dependents: Set[Column] = set()
     
