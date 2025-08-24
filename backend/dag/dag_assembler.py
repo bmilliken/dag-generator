@@ -2,13 +2,14 @@
 Main DAG Assembler
 
 This module orchestrates the complete DAG assembly process by coordinating
-the ObjectConstructor and DependencyBuilder modules.
+the ObjectConstructor and DependencyBuilder modules with schema validation.
 """
 
 from typing import Optional, Dict, Any
 import json
 from object_constructor import ObjectConstructor
 from dependency_builder import DependencyBuilder
+from yaml_schema_validator import YAMLSchemaValidator, ValidationError
 
 # Import our object classes
 import sys
