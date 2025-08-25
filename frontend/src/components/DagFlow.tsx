@@ -79,34 +79,125 @@ const DagFlow: React.FC = () => {
 
   const API_BASE = 'http://localhost:5002';
 
-  // Memoize the group color function to avoid recalculation
-  const getGroupColor = useCallback((groupName: string): string => {
-    // Lighter, more readable color palette
-    const colors = [
-      '#3b82f6', // Blue
-      '#10b981', // Emerald
-      '#f59e0b', // Amber
-      '#ef4444', // Red
-      '#8b5cf6', // Violet
-      '#06b6d4', // Cyan
-      '#84cc16', // Lime
-      '#f97316', // Orange
-      '#ec4899', // Pink
-      '#6366f1', // Indigo
-    ];
+  // Color assignment cache to ensure consistency
+  const [colorAssignments, setColorAssignments] = useState<{ [key: string]: string }>({});
+
+  // Convert hex to RGB for distance calculation
+  const hexToRgb = useCallback((hex: string): [number, number, number] => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? [
+      parseInt(result[1], 16),
+      parseInt(result[2], 16),
+      parseInt(result[3], 16)
+    ] : [0, 0, 0];
+  }, []);
+
+  // Calculate color distance using Delta E (simplified)
+  const colorDistance = useCallback((color1: string, color2: string): number => {
+    const [r1, g1, b1] = hexToRgb(color1);
+    const [r2, g2, b2] = hexToRgb(color2);
     
-    // Generate hash from group name for consistent color selection
-    let hash = 0;
-    for (let i = 0; i < groupName.length; i++) {
-      const char = groupName.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
+    // Simple Euclidean distance in RGB space (weighted for human perception)
+    const deltaR = (r1 - r2) * 0.3;
+    const deltaG = (g1 - g2) * 0.59;
+    const deltaB = (b1 - b2) * 0.11;
+    
+    return Math.sqrt(deltaR * deltaR + deltaG * deltaG + deltaB * deltaB);
+  }, [hexToRgb]);
+
+  // Convert HSB to hex color
+  const hsbToHex = useCallback((h: number, s: number, b: number): string => {
+    // Normalize values
+    h = h % 360;
+    s = Math.max(0, Math.min(100, s)) / 100;
+    b = Math.max(0, Math.min(100, b)) / 100;
+    
+    const c = b * s;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = b - c;
+    
+    let r = 0, g = 0, bl = 0;
+    
+    if (h >= 0 && h < 60) {
+      r = c; g = x; bl = 0;
+    } else if (h >= 60 && h < 120) {
+      r = x; g = c; bl = 0;
+    } else if (h >= 120 && h < 180) {
+      r = 0; g = c; bl = x;
+    } else if (h >= 180 && h < 240) {
+      r = 0; g = x; bl = c;
+    } else if (h >= 240 && h < 300) {
+      r = x; g = 0; bl = c;
+    } else if (h >= 300 && h < 360) {
+      r = c; g = 0; bl = x;
     }
     
-    // Use absolute value and modulo to get consistent index
-    const colorIndex = Math.abs(hash) % colors.length;
-    return colors[colorIndex];
+    r = Math.round((r + m) * 255);
+    g = Math.round((g + m) * 255);
+    bl = Math.round((bl + m) * 255);
+    
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${bl.toString(16).padStart(2, '0')}`;
   }, []);
+
+  // Generate colors using HSB with only hue as variable
+  const generateDistinctColors = useCallback((count: number): string[] => {
+    if (count === 0) return [];
+    
+    const colors: string[] = [];
+    const saturation = 100; // Max saturation for maximum vibrancy
+    const brightness = 75; // Lowered brightness for darker colors
+    
+    // Divide hue range by (groups + 1) to avoid going full circle
+    const hueStep = 360 / (count + 1);
+    
+    for (let i = 0; i < count; i++) {
+      // Start from hue 0 and add group number * step
+      const hue = i * hueStep;
+      const color = hsbToHex(hue, saturation, brightness);
+      colors.push(color);
+    }
+    
+    return colors;
+  }, [hsbToHex]);
+
+  // Memoize the group color function with HSB-based color generation
+  const getGroupColor = useCallback((groupName: string): string => {
+    // If color already assigned, return it
+    if (colorAssignments[groupName]) {
+      return colorAssignments[groupName];
+    }
+
+    // Get all unique groups from current nodes to determine total count
+    const allGroups = nodes.length > 0 
+      ? Array.from(new Set(nodes.map(node => node.data.group))).sort()
+      : [];
+    
+    // Return empty string if no groups available
+    if (allGroups.length === 0) {
+      return '';
+    }
+
+    // Generate colors for all groups at once using HSB
+    const totalGroups = allGroups.length;
+    const selectedColors = generateDistinctColors(totalGroups);
+    
+    // Assign colors to all groups in a deterministic way
+    const newAssignments: { [key: string]: string } = {};
+    allGroups.forEach((group, index) => {
+      if (colorAssignments[group]) {
+        // Keep existing assignment
+        newAssignments[group] = colorAssignments[group];
+      } else {
+        // Assign new color from HSB generation
+        newAssignments[group] = selectedColors[index % selectedColors.length];
+      }
+    });
+    
+    // Update all assignments at once
+    setColorAssignments(prev => ({ ...prev, ...newAssignments }));
+    
+    return newAssignments[groupName] || selectedColors[0];
+  }, [nodes, colorAssignments, generateDistinctColors]);
 
   // Refresh project data
   const refreshProject = async () => {
@@ -174,6 +265,15 @@ const DagFlow: React.FC = () => {
     
     const nodes: Node[] = [];
     const edges: Edge[] = [];
+    
+    // Pre-assign colors for all groups before creating nodes
+    const allGroups = Array.from(new Set(dagData.groups.map(group => group.group))).sort();
+    const selectedColors = generateDistinctColors(allGroups.length);
+    const groupColors: { [key: string]: string } = {};
+    
+    allGroups.forEach((group, index) => {
+      groupColors[group] = selectedColors[index % selectedColors.length];
+    });
     
     // Build a map of table names to their full names for easier lookups
     const tableMap: { [tableName: string]: string } = {};
@@ -268,7 +368,7 @@ const DagFlow: React.FC = () => {
       
       Object.keys(groupsInLevel).forEach((groupName) => {
         const tablesInGroup = groupsInLevel[groupName];
-        const groupColor = getGroupColor(groupName);
+        const groupColor = groupColors[groupName]; // Use pre-assigned color
         
         tablesInGroup.forEach((tableName, tableIndex) => {
           const fullName = `${groupName}.${tableName}`;
@@ -312,6 +412,9 @@ const DagFlow: React.FC = () => {
         },
       });
     });
+    
+    // Update color assignments cache
+    setColorAssignments(groupColors);
     
     return { nodes, edges };
   };
@@ -453,22 +556,6 @@ const DagFlow: React.FC = () => {
     );
   }, [setNodes, setEdges]);
 
-  // Optimized nodes change handler with drag performance improvements
-  const handleNodesChange = useCallback((changes: any[]) => {
-    // Check if any change is a drag operation
-    const isDragOperation = changes.some(change => 
-      change.type === 'position' && change.dragging
-    );
-    
-    if (isDragOperation) {
-      // During drag operations, only update positions without triggering expensive operations
-      onNodesChange(changes);
-    } else {
-      // For non-drag operations, use the normal handler
-      onNodesChange(changes);
-    }
-  }, [onNodesChange]);
-
   // Handle node click (optimized)
   const onNodeClick = useCallback((_event: React.MouseEvent, node: any) => {
     if (selectedTable === node.data.label) {
@@ -503,6 +590,37 @@ const DagFlow: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Initialize colors when nodes are loaded or groups change
+  useEffect(() => {
+    if (nodes.length > 0) {
+      const uniqueGroups = Array.from(new Set(nodes.map(node => node.data.group)));
+      const currentGroups = Object.keys(colorAssignments);
+      
+      // Check if we have new groups that need colors
+      const newGroups = uniqueGroups.filter(group => !currentGroups.includes(group));
+      
+      if (newGroups.length > 0) {
+        // Use HSB-based color generation for all groups
+        const totalGroups = uniqueGroups.length;
+        const selectedColors = generateDistinctColors(totalGroups);
+        
+        // Create new assignments, preserving existing ones
+        const newAssignments: { [key: string]: string } = { ...colorAssignments };
+        
+        // Assign colors to groups that don't have them yet
+        let colorIndex = 0;
+        uniqueGroups.forEach(group => {
+          if (!newAssignments[group]) {
+            newAssignments[group] = selectedColors[colorIndex % selectedColors.length];
+            colorIndex++;
+          }
+        });
+        
+        setColorAssignments(newAssignments);
+      }
+    }
+  }, [nodes, generateDistinctColors, colorAssignments]);
 
   // Handle escape key to clear selection
   useEffect(() => {
