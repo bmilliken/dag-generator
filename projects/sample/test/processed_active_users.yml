@@ -1,4 +1,3 @@
-group: processed
 table: processed_active_users
 description: Processed active users with enriched data
 columns:

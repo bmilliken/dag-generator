@@ -1,4 +1,3 @@
-group: src
 table: order_items
 description: "Source table containing individual line items for each order"
 columns:

@@ -1,4 +1,3 @@
-group: src
 table: orders
 description: "Source table containing raw order data from the e-commerce platform"
 columns:

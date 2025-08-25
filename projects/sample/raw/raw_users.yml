@@ -1,4 +1,3 @@
-group: raw
 table: raw_users
 description: Raw user data from source system
 columns:

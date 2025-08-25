@@ -35,45 +35,77 @@ class ObjectConstructor:
         
     def load_yaml_files(self, project_path: str) -> None:
         """
-        Load all YAML files from a project directory.
+        Load all YAML files from a project directory and subdirectories.
+        Groups are determined by subfolder names, not YAML content.
         
         Args:
-            project_path: Path to the project directory containing YAML files
+            project_path: Path to the project directory containing YAML files and group subdirectories
         """
         project_dir = Path(project_path)
         
         if not project_dir.exists():
             raise FileNotFoundError(f"Project directory '{project_path}' does not exist")
         
-        yaml_files = list(project_dir.glob("*.yml")) + list(project_dir.glob("*.yaml"))
+        # Find all YAML files in project directory and subdirectories
+        yaml_files = list(project_dir.rglob("*.yml")) + list(project_dir.rglob("*.yaml"))
         
         if not yaml_files:
-            raise ValueError(f"No YAML files found in '{project_path}'")
+            raise ValueError(f"No YAML files found in '{project_path}' or its subdirectories")
         
         print(f"Loading {len(yaml_files)} YAML files from {project_path}")
         
         for yaml_file in yaml_files:
             try:
+                # Determine group from folder structure
+                relative_path = yaml_file.relative_to(project_dir)
+                if len(relative_path.parts) > 1:
+                    # File is in a subdirectory - use subdirectory name as group
+                    group_name = relative_path.parts[0]
+                else:
+                    # File is in root directory - use 'default' as group or extract from filename
+                    group_name = 'default'
+                
                 with open(yaml_file, 'r') as f:
                     data = yaml.safe_load(f)
                     if data:  # Skip empty files
                         data['_source_file'] = str(yaml_file)
-                        self.yaml_data.append(data)
-                        print(f"  ✓ Loaded {yaml_file.name}")
+                        data['_inferred_group'] = group_name  # Add inferred group
+                        
+                        # Handle multiple tables in a single YAML file
+                        if 'tables' in data:
+                            # New format: multiple tables in one file
+                            for table_data in data['tables']:
+                                table_entry = {
+                                    '_source_file': str(yaml_file),
+                                    '_inferred_group': group_name,
+                                    'table': table_data['table'],
+                                    'description': table_data.get('description', ''),
+                                    'columns': table_data.get('columns', []),
+                                    'table_depends_on': table_data.get('table_depends_on', [])
+                                }
+                                self.yaml_data.append(table_entry)
+                        else:
+                            # Legacy format: single table per file
+                            self.yaml_data.append(data)
+                        
+                        print(f"  ✓ Loaded {yaml_file.name} (group: {group_name})")
             except Exception as e:
                 print(f"  ✗ Error loading {yaml_file.name}: {e}")
                 raise
     
     def create_groups(self) -> None:
         """
-        Create all Group objects from the YAML data.
-        Groups are identified by unique group names across all YAML files.
+        Create all Group objects from the inferred group names.
+        Groups are determined by subfolder structure, not YAML content.
         """
         print("\n=== Creating Groups ===")
         
         group_names = set()
         for data in self.yaml_data:
-            if 'group' in data:
+            if '_inferred_group' in data:
+                group_names.add(data['_inferred_group'])
+            elif 'group' in data:
+                # Fallback to YAML group field for backward compatibility
                 group_names.add(data['group'])
         
         for group_name in sorted(group_names):
@@ -86,15 +118,21 @@ class ObjectConstructor:
     def create_tables(self) -> None:
         """
         Create all Table objects and assign them to their respective groups.
+        Groups are determined by folder structure.
         """
         print("\n=== Creating Tables ===")
         
         for data in self.yaml_data:
-            if 'group' not in data or 'table' not in data:
-                print(f"  ⚠ Skipping invalid data: missing group or table")
+            if 'table' not in data:
+                print(f"  ⚠ Skipping invalid data: missing table name")
                 continue
             
-            group_name = data['group']
+            # Use inferred group from folder structure, fallback to YAML group field
+            group_name = data.get('_inferred_group', data.get('group'))
+            if not group_name:
+                print(f"  ⚠ Skipping table: no group found")
+                continue
+                
             table_name = data['table']
             table_key = f"{group_name}.{table_name}"
             
@@ -119,12 +157,19 @@ class ObjectConstructor:
         """
         Create all Column objects and assign them to their respective tables.
         Also handles table-level dependencies by creating invisible columns.
+        Groups are determined by folder structure.
         """
         print("\n=== Creating Columns ===")
         
         for data in self.yaml_data:
-            group_name = data['group']
-            table_name = data['table']
+            # Use inferred group from folder structure, fallback to YAML group field
+            group_name = data.get('_inferred_group', data.get('group'))
+            table_name = data.get('table')
+            
+            if not group_name or not table_name:
+                print(f"  ⚠ Skipping invalid data: missing group or table")
+                continue
+                
             table_key = f"{group_name}.{table_name}"
             
             if table_key not in self.tables:

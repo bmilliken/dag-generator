@@ -1,12 +1,9 @@
-group: stg
 table: enriched_orders
 description: "Staging table that enriches order data with customer information and aggregated item metrics"
 columns:
   - name: order_id
-    key_type: "primary"
     depends_on: ["src.orders.order_id"]
   - name: user_id
-    key_type: "foreign"
     depends_on: ["src.orders.user_id"]
   - name: enriched_order_id
     description: "A unique identifier for each enriched order, combining order_id and user_id."

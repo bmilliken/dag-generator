@@ -1,7 +1,6 @@
-group: test
 table: dependent_table
 description: "Test table with table-level dependency"
-table_depends_on: ["raw.users"]
+table_depends_on: ["raw.raw_users"]
 columns:
   - name: test_column
     description: "Test column"

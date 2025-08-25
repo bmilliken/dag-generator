@@ -1,4 +1,3 @@
-group: src
 table: customers
 description: "Source table containing customer profile and demographic information"
 columns:

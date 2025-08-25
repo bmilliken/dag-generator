@@ -55,8 +55,13 @@ class DependencyBuilder:
             if not columns_data:
                 continue
             
-            group_name = data['group']
-            table_name = data['table']
+            # Use inferred group from folder structure, fallback to YAML group field
+            group_name = data.get('_inferred_group', data.get('group'))
+            table_name = data.get('table')
+            
+            if not group_name or not table_name:
+                print(f"  ⚠ Skipping data: missing group or table")
+                continue
             
             for column_data in columns_data:
                 if 'name' not in column_data or 'depends_on' not in column_data:

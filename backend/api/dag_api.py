@@ -43,9 +43,15 @@ def get_first_available_project():
     for item in sorted(os.listdir(projects_dir)):
         project_path = os.path.join(projects_dir, item)
         if os.path.isdir(project_path):
-            # Check if project has YAML files
-            yaml_files = [f for f in os.listdir(project_path) if f.endswith('.yml') or f.endswith('.yaml')]
-            if yaml_files:
+            # Check if project has YAML files (recursively check subdirectories too)
+            has_yaml = False
+            for root, dirs, files in os.walk(project_path):
+                yaml_files = [f for f in files if f.endswith('.yml') or f.endswith('.yaml')]
+                if yaml_files:
+                    has_yaml = True
+                    break
+            
+            if has_yaml:
                 available_projects.append(item)
     
     return available_projects[0] if available_projects else None
@@ -152,10 +158,17 @@ def get_current_project():
                 print(f"🔍 Debug: checking item = {item}, path = {project_path}")
                 if os.path.isdir(project_path):
                     try:
-                        # Check if project has YAML files
-                        yaml_files = [f for f in os.listdir(project_path) if f.endswith('.yml') or f.endswith('.yaml')]
-                        print(f"🔍 Debug: {item} has YAML files: {yaml_files}")
-                        if yaml_files:
+                        # Check if project has YAML files (recursively check subdirectories too)
+                        has_yaml = False
+                        yaml_files_found = []
+                        for root, dirs, files in os.walk(project_path):
+                            yaml_files = [f for f in files if f.endswith('.yml') or f.endswith('.yaml')]
+                            if yaml_files:
+                                yaml_files_found.extend([f"{os.path.relpath(root, project_path)}/{f}" for f in yaml_files])
+                                has_yaml = True
+                        
+                        print(f"🔍 Debug: {item} has YAML files: {has_yaml} - files: {yaml_files_found}")
+                        if has_yaml:
                             available_projects.append(item)
                     except Exception as e:
                         print(f"⚠️  Error checking project {item}: {e}")
@@ -197,8 +210,15 @@ def set_project(project_name):
             if os.path.exists(projects_dir):
                 for item in os.listdir(projects_dir):
                     if os.path.isdir(os.path.join(projects_dir, item)):
-                        yaml_files = [f for f in os.listdir(os.path.join(projects_dir, item)) if f.endswith('.yml') or f.endswith('.yaml')]
-                        if yaml_files:
+                        # Check if project has YAML files (recursively)
+                        project_item_path = os.path.join(projects_dir, item)
+                        has_yaml = False
+                        for root, dirs, files in os.walk(project_item_path):
+                            yaml_files = [f for f in files if f.endswith('.yml') or f.endswith('.yaml')]
+                            if yaml_files:
+                                has_yaml = True
+                                break
+                        if has_yaml:
                             available_projects.append(item)
             
             return jsonify({
