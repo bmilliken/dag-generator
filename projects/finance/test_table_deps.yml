@@ -1,0 +1,11 @@
+group: stg
+table: test_table_deps
+description: "Test table demonstrating table-level dependencies"
+table_depends_on: ["src.customers"]
+columns:
+  - name: test_column
+    description: "A test column"
+    depends_on: []
+  - name: another_column
+    description: "Another test column"
+    depends_on: ["src.orders.order_id"]

@@ -92,14 +92,21 @@ class JSONExporter:
         
         # Build column lineage information for the target table
         columns_info = []
+        
+        # First pass: collect all lineage tables including from invisible columns
         for column in table.columns:
             # Get columns in the lineage of this column (prevents cross-contamination)
             lineage_columns = column.get_lineage_columns()
             
-            # Add tables from all lineage columns to our set
+            # Add tables from all lineage columns to our set (including from invisible columns)
             for lineage_col in lineage_columns:
                 connected_tables.add(lineage_col.table)
-            
+         # Second pass: build column info only for visible columns
+        for column in table.columns:
+            # Skip invisible columns in the final output - they are only for internal lineage tracking
+            if column.is_invisible:
+                continue
+                
             # Get immediate dependencies
             immediate_dependencies = column.get_prev_columns()
             immediate_deps_info = [
@@ -109,6 +116,7 @@ class JSONExporter:
                     "key_type": dep_col.key_type
                 }
                 for dep_col in sorted(immediate_dependencies, key=lambda c: c.get_full_name())
+                if not dep_col.is_invisible  # Don't include invisible columns in dependencies
             ]
             
             # Get ultimate source columns
@@ -120,6 +128,7 @@ class JSONExporter:
                     "key_type": src_col.key_type
                 }
                 for src_col in sorted(source_columns, key=lambda c: c.get_full_name())
+                if not src_col.is_invisible  # Don't include invisible columns in source info
             ]
             
             # Determine if this column is a source column (no immediate dependencies)

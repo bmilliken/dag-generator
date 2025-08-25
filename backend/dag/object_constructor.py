@@ -118,13 +118,11 @@ class ObjectConstructor:
     def create_columns(self) -> None:
         """
         Create all Column objects and assign them to their respective tables.
+        Also handles table-level dependencies by creating invisible columns.
         """
         print("\n=== Creating Columns ===")
         
         for data in self.yaml_data:
-            if 'columns' not in data:
-                continue
-            
             group_name = data['group']
             table_name = data['table']
             table_key = f"{group_name}.{table_name}"
@@ -135,7 +133,15 @@ class ObjectConstructor:
             
             table = self.tables[table_key]
             
-            for column_data in data['columns']:
+            # First, handle table-level dependencies if they exist
+            table_depends_on = data.get('table_depends_on', [])
+            if table_depends_on:
+                print(f"  ℹ Processing table-level dependencies for {table_key}: {table_depends_on}")
+                self._create_invisible_columns_for_table_dependencies(table, table_depends_on)
+            
+            # Then handle regular column definitions (if present)
+            columns_data = data.get('columns', [])
+            for column_data in columns_data:
                 if 'name' not in column_data:
                     print(f"  ⚠ Column missing name in {table_key}")
                     continue
@@ -145,8 +151,8 @@ class ObjectConstructor:
                 description = column_data.get('description', f"Column {column_name}")
                 key_type = column_data.get('key_type', "")
                 
-                # Create column with reference to table
-                column = Column(column_name, table, description, key_type)
+                # Create column with reference to table (visible column)
+                column = Column(column_name, table, description, key_type, is_invisible=False)
                 
                 # Add to our collections
                 self.columns[column_key] = column
@@ -155,6 +161,47 @@ class ObjectConstructor:
                 print(f"  ✓ Created column: {column_key}")
         
         print(f"Created {len(self.columns)} columns")
+    
+    def _create_invisible_columns_for_table_dependencies(self, table: Table, table_depends_on: List[str]) -> None:
+        """
+        Create invisible columns for table-level dependencies.
+        Each invisible column depends on all columns from the referenced table.
+        
+        Args:
+            table: The table that has table-level dependencies
+            table_depends_on: List of table references (e.g., ['src.customers'])
+        """
+        for table_ref in table_depends_on:
+            if table_ref not in self.tables:
+                print(f"    ⚠ Referenced table {table_ref} not found for table-level dependency")
+                continue
+            
+            referenced_table = self.tables[table_ref]
+            
+            # Create an invisible column that represents the table-level dependency
+            invisible_column_name = f"__table_dep_{table_ref.replace('.', '_')}"
+            invisible_column_key = f"{table.get_full_name()}.{invisible_column_name}"
+            
+            # Create the invisible column
+            invisible_column = Column(
+                name=invisible_column_name,
+                table=table,
+                description=f"Invisible column for table-level dependency on {table_ref}",
+                key_type="",
+                is_invisible=True
+            )
+            
+            # Add to collections
+            self.columns[invisible_column_key] = invisible_column
+            table.add_column(invisible_column)
+            
+            print(f"    ✓ Created invisible column: {invisible_column_key}")
+            
+            # Note: Dependencies will be linked later by dependency_builder
+            # We store the table reference for later linking
+            if not hasattr(invisible_column, '_table_depends_on'):
+                invisible_column._table_depends_on = []
+            invisible_column._table_depends_on.append(table_ref)
     
     def construct_objects(self, project_path: str) -> None:
         """

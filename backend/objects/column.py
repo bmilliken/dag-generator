@@ -20,11 +20,12 @@ class Column:
         table (Table): The table object this column belongs to
         description (str): Optional description of what this column represents
         key_type (str): Type of key (primary, foreign, or empty string)
+        is_invisible (bool): Whether this column is invisible (used for table-level dependencies)
         dependencies (Set[Column]): Set of columns this column depends on
         dependents (Set[Column]): Set of columns that depend on this column
     """
     
-    def __init__(self, name: str, table: 'Table', description: str = "", key_type: str = ""):
+    def __init__(self, name: str, table: 'Table', description: str = "", key_type: str = "", is_invisible: bool = False):
         """
         Initialize a Column object.
         
@@ -33,11 +34,13 @@ class Column:
             table (Table): The table object this column belongs to
             description (str): Optional description of what this column represents
             key_type (str): Type of key (primary, foreign, or empty string)
+            is_invisible (bool): Whether this column is invisible (used for table-level dependencies)
         """
         self.name = name
         self.table = table
         self.description = description
         self.key_type = key_type
+        self.is_invisible = is_invisible
         self.dependencies: Set[Column] = set()
         self.dependents: Set[Column] = set()
     

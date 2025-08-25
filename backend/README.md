@@ -43,6 +43,14 @@ environment:
 - `finance` (default) - Sample finance domain project
 - Add your own project folders under `Projects/`
 
+### Features
+
+#### Table-Level Dependencies
+The backend supports table-level dependencies through the `table_depends_on` field in YAML files. This creates invisible columns that represent dependencies on all columns of the referenced table, enabling table-level lineage tracking without explicit column mapping.
+
+#### Column-Level Dependencies
+Standard column-to-column dependencies are tracked through the `depends_on` field in column definitions.
+
 ### API Endpoints
 
 - `GET /health` - Health check

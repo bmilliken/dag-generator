@@ -49,14 +49,16 @@ class DependencyBuilder:
         
         dependency_count = 0
         
+        # First handle regular column dependencies from YAML
         for data in self.yaml_data:
-            if 'columns' not in data:
+            columns_data = data.get('columns', [])  # Handle missing columns field
+            if not columns_data:
                 continue
             
             group_name = data['group']
             table_name = data['table']
             
-            for column_data in data['columns']:
+            for column_data in columns_data:
                 if 'name' not in column_data or 'depends_on' not in column_data:
                     continue
                 
@@ -86,7 +88,41 @@ class DependencyBuilder:
                     
                     print(f"  ✓ {dep_key} -> {column_key}")
         
+        # Then handle invisible columns for table-level dependencies
+        dependency_count += self._build_invisible_column_dependencies()
+        
         print(f"Built {dependency_count} column dependencies")
+    
+    def _build_invisible_column_dependencies(self) -> int:
+        """
+        Build dependencies for invisible columns that represent table-level dependencies.
+        Each invisible column depends on all columns from its referenced table.
+        
+        Returns:
+            int: Number of dependencies created
+        """
+        dependency_count = 0
+        
+        # Find invisible columns that have table dependencies
+        for column_key, column in self.columns.items():
+            if not column.is_invisible or not hasattr(column, '_table_depends_on'):
+                continue
+            
+            for table_ref in column._table_depends_on:
+                if table_ref not in self.tables:
+                    print(f"  ⚠ Referenced table {table_ref} not found for invisible column {column_key}")
+                    continue
+                
+                referenced_table = self.tables[table_ref]
+                
+                # Link invisible column to ALL columns of the referenced table (except other invisible columns)
+                for source_column in referenced_table.columns:
+                    if not source_column.is_invisible:  # Only link to visible columns
+                        source_column.add_link(column)
+                        dependency_count += 1
+                        print(f"  ✓ {source_column.get_full_name()} -> {column_key} (table-level)")
+        
+        return dependency_count
     
     def build_table_dependencies(self) -> None:
         """

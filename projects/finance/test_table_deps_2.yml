@@ -1,0 +1,6 @@
+group: mart
+table: test_table_deps_2
+description: "Test table demonstrating table-level dependencies without explicit columns"
+table_depends_on: 
+  - stg.test_table_deps
+  - mart.order

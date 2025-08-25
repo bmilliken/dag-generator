@@ -3,7 +3,7 @@
   "title": "DAG Generator Table Schema",
   "description": "Schema for validating table definition YAML files in the DAG generator",
   "type": "object",
-  "required": ["group", "table", "columns"],
+  "required": ["group", "table"],
   "properties": {
     "group": {
       "type": "string",
@@ -23,6 +23,16 @@
     "description": {
       "type": "string",
       "description": "Optional description of what this table represents"
+    },
+    "table_depends_on": {
+      "type": "array",
+      "description": "List of tables this table depends on (creates invisible columns for table-level lineage)",
+      "items": {
+        "type": "string",
+        "description": "Fully qualified table name in format 'group.table'",
+        "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*\\.[a-zA-Z_][a-zA-Z0-9_]*$"
+      },
+      "uniqueItems": true
     },
     "columns": {
       "type": "array",
