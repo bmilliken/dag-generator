@@ -33,6 +33,86 @@ class ObjectConstructor:
         self.columns: Dict[str, Column] = {}  # Key format: "group.table.column"
         self.yaml_data: List[Dict[str, Any]] = []
         
+    def _parse_multi_table_yaml(self, content: str, source_file: str, group_name: str) -> List[Dict[str, Any]]:
+        """
+        Parse a YAML file that may contain multiple table definitions.
+        Each 'table:' keyword starts a new table definition.
+        
+        Args:
+            content: Raw YAML file content
+            source_file: Path to the source file
+            group_name: Inferred group name from folder structure
+            
+        Returns:
+            List of table data dictionaries
+        """
+        # Try to parse as a single YAML document first
+        try:
+            data = yaml.safe_load(content)
+        except yaml.YAMLError as e:
+            print(f"  ✗ YAML parse error in {source_file}: {e}")
+            return []
+        
+        if not data:
+            return []
+        
+        # Check if this is a multi-table format by looking for multiple 'table' keys
+        # Split content by lines and look for lines that start with 'table:'
+        lines = content.strip().split('\n')
+        table_start_lines = []
+        for i, line in enumerate(lines):
+            stripped_line = line.strip()
+            if stripped_line.startswith('table:') and not stripped_line.startswith('table_depends_on:'):
+                table_start_lines.append(i)
+        
+        if len(table_start_lines) <= 1:
+            # Single table format - handle as before
+            if isinstance(data, dict) and 'table' in data:
+                data['_source_file'] = source_file
+                data['_inferred_group'] = group_name
+                return [data]
+            elif isinstance(data, dict) and 'tables' in data:
+                # Legacy multi-table format with 'tables:' key
+                table_entries = []
+                for table_data in data['tables']:
+                    table_entry = {
+                        '_source_file': source_file,
+                        '_inferred_group': group_name,
+                        'table': table_data['table'],
+                        'description': table_data.get('description', ''),
+                        'columns': table_data.get('columns', []),
+                        'table_depends_on': table_data.get('table_depends_on', [])
+                    }
+                    table_entries.append(table_entry)
+                return table_entries
+            else:
+                return []
+        
+        # Multiple table format - split content by 'table:' occurrences
+        table_entries = []
+        for i, start_line in enumerate(table_start_lines):
+            # Determine end of this table definition
+            if i + 1 < len(table_start_lines):
+                end_line = table_start_lines[i + 1]
+                table_content_lines = lines[start_line:end_line]
+            else:
+                table_content_lines = lines[start_line:]
+            
+            # Join lines and parse as YAML
+            table_content = '\n'.join(table_content_lines)
+            
+            try:
+                table_data = yaml.safe_load(table_content)
+                if table_data and isinstance(table_data, dict) and 'table' in table_data:
+                    table_data['_source_file'] = source_file
+                    table_data['_inferred_group'] = group_name
+                    table_entries.append(table_data)
+            except yaml.YAMLError as e:
+                print(f"  ✗ Error parsing table definition starting at line {start_line + 1} in {source_file}: {e}")
+                continue
+        
+        return table_entries
+    
     def load_yaml_files(self, project_path: str) -> None:
         """
         Load all YAML files from a project directory and subdirectories.
@@ -66,29 +146,13 @@ class ObjectConstructor:
                     group_name = 'default'
                 
                 with open(yaml_file, 'r') as f:
-                    data = yaml.safe_load(f)
-                    if data:  # Skip empty files
-                        data['_source_file'] = str(yaml_file)
-                        data['_inferred_group'] = group_name  # Add inferred group
+                    content = f.read()
+                    
+                    # Parse multiple table definitions in a single file
+                    table_entries = self._parse_multi_table_yaml(content, str(yaml_file), group_name)
+                    self.yaml_data.extend(table_entries)
                         
-                        # Handle multiple tables in a single YAML file
-                        if 'tables' in data:
-                            # New format: multiple tables in one file
-                            for table_data in data['tables']:
-                                table_entry = {
-                                    '_source_file': str(yaml_file),
-                                    '_inferred_group': group_name,
-                                    'table': table_data['table'],
-                                    'description': table_data.get('description', ''),
-                                    'columns': table_data.get('columns', []),
-                                    'table_depends_on': table_data.get('table_depends_on', [])
-                                }
-                                self.yaml_data.append(table_entry)
-                        else:
-                            # Legacy format: single table per file
-                            self.yaml_data.append(data)
-                        
-                        print(f"  ✓ Loaded {yaml_file.name} (group: {group_name})")
+                print(f"  ✓ Loaded {yaml_file.name} (group: {group_name})")
             except Exception as e:
                 print(f"  ✗ Error loading {yaml_file.name}: {e}")
                 raise
@@ -265,4 +329,4 @@ class ObjectConstructor:
         self.create_columns()
         
         print("\n✅ Object construction completed!")
-    
+
