@@ -96,7 +96,8 @@ class DependencyBuilder:
     def _build_invisible_column_dependencies(self) -> int:
         """
         Build dependencies for invisible columns that represent table-level dependencies.
-        Each invisible column depends on all columns from its referenced table.
+        Each invisible column depends on ALL columns (including invisible) of the referenced table.
+        This ensures correct table-level lineage without cross-contamination.
         
         Returns:
             int: Number of dependencies created
@@ -115,12 +116,12 @@ class DependencyBuilder:
                 
                 referenced_table = self.tables[table_ref]
                 
-                # Link invisible column to ALL columns of the referenced table (except other invisible columns)
+                # Link invisible column to ALL columns of the referenced table
+                # (both visible and invisible columns)
                 for source_column in referenced_table.columns:
-                    if not source_column.is_invisible:  # Only link to visible columns
-                        source_column.add_link(column)
-                        dependency_count += 1
-                        print(f"  ✓ {source_column.get_full_name()} -> {column_key} (table-level)")
+                    source_column.add_link(column)
+                    dependency_count += 1
+                    print(f"  ✓ {source_column.get_full_name()} -> {column_key} (table-level)")
         
         return dependency_count
     

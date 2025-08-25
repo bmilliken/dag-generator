@@ -93,7 +93,8 @@ class JSONExporter:
         # Build column lineage information for the target table
         columns_info = []
         
-        # First pass: collect all lineage tables including from invisible columns
+        # Collect all lineage tables including from invisible columns
+        # Don't filter invisible columns here - let them participate fully in lineage calculation
         for column in table.columns:
             # Get columns in the lineage of this column (prevents cross-contamination)
             lineage_columns = column.get_lineage_columns()
@@ -101,7 +102,8 @@ class JSONExporter:
             # Add tables from all lineage columns to our set (including from invisible columns)
             for lineage_col in lineage_columns:
                 connected_tables.add(lineage_col.table)
-         # Second pass: build column info only for visible columns
+        
+        # Build column info only for visible columns (filter invisible columns only for frontend display)
         for column in table.columns:
             # Skip invisible columns in the final output - they are only for internal lineage tracking
             if column.is_invisible:
@@ -116,7 +118,7 @@ class JSONExporter:
                     "key_type": dep_col.key_type
                 }
                 for dep_col in sorted(immediate_dependencies, key=lambda c: c.get_full_name())
-                if not dep_col.is_invisible  # Don't include invisible columns in dependencies
+                if not dep_col.is_invisible  # Filter invisible columns from user-visible dependency info
             ]
             
             # Get ultimate source columns
@@ -128,7 +130,7 @@ class JSONExporter:
                     "key_type": src_col.key_type
                 }
                 for src_col in sorted(source_columns, key=lambda c: c.get_full_name())
-                if not src_col.is_invisible  # Don't include invisible columns in source info
+                if not src_col.is_invisible  # Filter invisible columns from user-visible source info
             ]
             
             # Determine if this column is a source column (no immediate dependencies)
