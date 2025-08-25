@@ -76,6 +76,7 @@ const DagFlow: React.FC = () => {
   const [tableDetails, setTableDetails] = useState<TableDetails | null>(null);
   const [showDetailsPanel, setShowDetailsPanel] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
 
   const API_BASE = 'http://localhost:5002';
 
@@ -495,7 +496,8 @@ const DagFlow: React.FC = () => {
       const lineageData = response.data;
       setSelectedTable(tableName);
       setTableDetails(lineageData);
-      setShowDetailsPanel(true);
+      // Only show details panel if sidebar is visible
+      setShowDetailsPanel(sidebarVisible);
       console.log('Lineage data:', lineageData);
       console.log('Selected table:', tableName);
       
@@ -506,7 +508,7 @@ const DagFlow: React.FC = () => {
     } catch (err) {
       console.error('Failed to fetch lineage:', err);
     }
-  }, [API_BASE, updateNodeStyles, updateEdgeStyles]);
+  }, [API_BASE, updateNodeStyles, updateEdgeStyles, sidebarVisible]);
 
   // Clear lineage selection (optimized)
   const clearLineage = useCallback(() => {
@@ -590,6 +592,21 @@ const DagFlow: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Toggle sidebar visibility
+  const toggleSidebar = useCallback(() => {
+    setSidebarVisible(prev => {
+      const newVisibility = !prev;
+      // If hiding sidebar, also hide details panel
+      if (!newVisibility) {
+        setShowDetailsPanel(false);
+      } else if (selectedTable && tableDetails) {
+        // If showing sidebar and there's a selected table, show details panel
+        setShowDetailsPanel(true);
+      }
+      return newVisibility;
+    });
+  }, [selectedTable, tableDetails]);
 
   // Initialize colors when nodes are loaded or groups change
   useEffect(() => {
@@ -696,6 +713,13 @@ const DagFlow: React.FC = () => {
             </span>
           )}
           <button 
+            onClick={toggleSidebar}
+            className="toggle-sidebar-button"
+            title={sidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
+          >
+            Toggle Sidebar
+          </button>
+          <button 
             onClick={refreshProject} 
             disabled={refreshing || !projectInfo?.current_project}
             className="refresh-button"
@@ -717,6 +741,8 @@ const DagFlow: React.FC = () => {
           fitView
           attributionPosition="top-right"
           className="dag-flow"
+          minZoom={0}
+          maxZoom={Infinity}
         >
           <MiniMap />
           <Controls />
@@ -741,7 +767,7 @@ const DagFlow: React.FC = () => {
       </div>
 
       {/* Table Details Panel */}
-      {showDetailsPanel && tableDetails && (
+      {showDetailsPanel && tableDetails && sidebarVisible && (
         <TableDetailsPanel
           tableDetails={tableDetails}
           isVisible={showDetailsPanel}

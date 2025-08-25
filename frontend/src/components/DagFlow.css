@@ -54,7 +54,7 @@
   border-radius: 4px;
 }
 
-.refresh-button, .retry-button {
+.refresh-button, .retry-button, .toggle-sidebar-button {
   padding: 0.5rem 1rem;
   background: #007acc;
   color: white;
@@ -65,8 +65,19 @@
   transition: background-color 0.2s;
 }
 
-.refresh-button:hover:not(:disabled), .retry-button:hover {
+.refresh-button:hover:not(:disabled), .retry-button:hover, .toggle-sidebar-button:hover {
   background: #005a9e;
+}
+
+.toggle-sidebar-button {
+  background: #6366f1;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.toggle-sidebar-button:hover {
+  background: #4f46e5;
 }
 
 .refresh-button:disabled {
