@@ -3,3 +3,4 @@ jsonschema>=4.0.0
 pathlib2>=2.3.7; python_version<"3.4"
 flask>=2.0.0
 flask-cors>=3.0.0
+watchdog>=2.1.0

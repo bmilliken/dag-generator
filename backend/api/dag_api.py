@@ -11,11 +11,13 @@ import sys
 import os
 
 # Add paths for imports
+sys.path.insert(0, os.path.dirname(__file__))  # Add current directory
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dag'))
 
-from dag_assembler import DAGAssembler
-from json_exporter import JSONExporter
+from dag.dag_assembler import DAGAssembler
+from json_exporter import JSONExporter  # Now in same directory
+from file_watcher import file_watcher   # Now in same directory
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -109,6 +111,9 @@ def initialize_dag(project_name=None):
         # Create the JSON exporter
         exporter = JSONExporter(assembler.groups, assembler.tables, assembler.columns)
         
+        # Clear any pending changes for this project since we just reloaded it
+        file_watcher.clear_pending_changes(current_project)
+        
         print(f"✅ DAG initialized successfully for project: {current_project}")
         return True
         
@@ -160,7 +165,9 @@ def get_current_project():
         return jsonify({
             "current_project": current_project,
             "available_projects": sorted(available_projects),
-            "initialized": exporter is not None
+            "initialized": exporter is not None,
+            "has_pending_changes": file_watcher.has_pending_changes(current_project) if current_project else False,
+            "pending_changes_count": len(file_watcher.get_pending_changes(current_project)) if current_project else 0
         })
     except Exception as e:
         print(f"❌ Error in get_current_project: {e}")
@@ -367,6 +374,36 @@ def get_stats():
     except Exception as e:
         return jsonify({"error": f"Failed to get stats: {str(e)}"}), 500
 
+@app.route('/refresh', methods=['POST'])
+def refresh_project():
+    """
+    Refresh the current project by reloading the DAG from disk.
+    
+    Returns:
+        JSON: Success/error message and updated project info
+    """
+    if not current_project:
+        return jsonify({"error": "No project loaded"}), 400
+    
+    try:
+        pending_changes = file_watcher.get_pending_changes(current_project)
+        print(f"🔄 Refreshing project '{current_project}' with {len(pending_changes)} pending changes")
+        
+        # Reinitialize the DAG
+        if initialize_dag(current_project):
+            return jsonify({
+                "message": f"Successfully refreshed project '{current_project}'",
+                "project": current_project,
+                "total_tables": len(assembler.tables) if assembler else 0,
+                "total_columns": len(assembler.columns) if assembler else 0,
+                "changes_applied": len(pending_changes),
+                "has_pending_changes": False
+            })
+        else:
+            return jsonify({"error": f"Failed to refresh project '{current_project}'"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Failed to refresh project: {str(e)}"}), 500
+
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors."""
@@ -385,10 +422,15 @@ if __name__ == '__main__':
         print("❌ Failed to initialize DAG. Exiting...")
         exit(1)
     
+    # Start file watching
+    projects_dir = get_projects_dir()
+    file_watcher.start_watching(projects_dir)
+    
     print("\n📊 Available Endpoints:")
     print("  GET  /health                    - Health check")
     print("  GET  /project                   - Get current project info")
     print("  POST /project/<name>            - Switch to different project")
+    print("  POST /refresh                   - Refresh current project from disk")
     print("  GET  /dag                       - Complete DAG structure")
     print("  GET  /table/<name>/lineage      - Table lineage (supports both 'table' and 'group.table')")
     print("  GET  /tables                    - List all tables")
@@ -396,6 +438,14 @@ if __name__ == '__main__':
     print("  GET  /stats                     - DAG statistics")
     
     print(f"\n🌐 Server starting on http://localhost:5002")
+    print("📁 File watching enabled - changes will be tracked but not auto-applied")
     print("Press Ctrl+C to stop the server")
     
-    app.run(debug=True, host='0.0.0.0', port=5002)
+    try:
+        app.run(debug=True, host='0.0.0.0', port=5002)
+    except KeyboardInterrupt:
+        print("\n🛑 Shutting down server...")
+        file_watcher.stop_watching()
+    except Exception as e:
+        print(f"❌ Error running server: {e}")
+        file_watcher.stop_watching()

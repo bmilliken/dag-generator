@@ -13,13 +13,14 @@ services:
     ports:
       - "5002:5002"
     volumes:
-      - ./projects:/app/projects:ro
+      - ./projects:/app/projects:rw           # Read-write for live changes
+      - ./backend:/app:rw                     # Mount source code for development
     environment:
-      - FLASK_ENV=production
+      - FLASK_ENV=development                 # Enable development mode
+      - FLASK_DEBUG=1                        # Enable debug mode
       - PYTHONPATH=/app
-      # Configure which project folder to analyze (default: finance)
-      # - DAG_TARGET_PROJECT=finance
     restart: unless-stopped
+    command: ["python", "api/dag_api.py"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
       interval: 30s
@@ -27,20 +28,22 @@ services:
       retries: 3
       start_period: 40s
 
-  # Frontend service placeholder (to be added later)
+  # Frontend service
   frontend:
-    build: ./frontend
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile.dev
     container_name: dag-generator-frontend
     ports:
-      - "3000:80"
+      - "3000:5173"                          # Map to Vite's dev port
+    volumes:
+      - ./frontend/src:/app/src:rw           # Mount source for live reloading
+      - ./frontend/public:/app/public:rw     # Mount public assets
+      - /app/node_modules                    # Preserve node_modules
     depends_on:
       - backend
     environment:
       - VITE_API_URL=http://localhost:5002
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+    stdin_open: true
+    tty: true

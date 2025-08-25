@@ -21,4 +21,3 @@ columns:
     depends_on: ["src.customers.customer_name"]  # Joined from customers table
   - name: customer_segment
     depends_on: ["src.customers.customer_segment"]  # Customer segmentation info
-
