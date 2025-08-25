@@ -11,12 +11,14 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #ffffff;
 }
 
 .App {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: #ffffff;
 }
 
 .App-header {
@@ -37,4 +39,5 @@ body {
 .App-main {
   flex: 1;
   overflow: hidden;
+  background-color: #ffffff;
 }

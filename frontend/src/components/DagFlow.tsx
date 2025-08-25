@@ -7,7 +7,6 @@ import {
   Controls,
   MiniMap,
   Background,
-  BackgroundVariant,
   MarkerType,
 } from 'reactflow';
 import type { Node, Edge, Connection } from 'reactflow';
@@ -36,6 +35,8 @@ interface ProjectInfo {
   current_project: string;
   available_projects: string[];
   initialized: boolean;
+  has_pending_changes?: boolean;
+  pending_changes_count?: number;
 }
 
 interface TableDetails {
@@ -74,6 +75,7 @@ const DagFlow: React.FC = () => {
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [tableDetails, setTableDetails] = useState<TableDetails | null>(null);
   const [showDetailsPanel, setShowDetailsPanel] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const API_BASE = 'http://localhost:5002';
 
@@ -105,6 +107,32 @@ const DagFlow: React.FC = () => {
     const colorIndex = Math.abs(hash) % colors.length;
     return colors[colorIndex];
   }, []);
+
+  // Refresh project data
+  const refreshProject = async () => {
+    if (!projectInfo?.current_project) return;
+    
+    setRefreshing(true);
+    setError(null);
+    
+    try {
+      // Call refresh endpoint
+      const refreshResponse = await axios.post(`${API_BASE}/refresh`);
+      console.log('Refresh response:', refreshResponse.data);
+      
+      // Fetch updated project info
+      await fetchProjectInfo();
+      
+      // Fetch updated DAG data
+      await fetchDagData();
+      
+    } catch (err) {
+      console.error('Failed to refresh project:', err);
+      setError('Failed to refresh project data');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Fetch project info
   const fetchProjectInfo = async () => {
@@ -142,6 +170,8 @@ const DagFlow: React.FC = () => {
 
   // Convert DAG data to React Flow nodes and edges
   const convertDagToFlow = (dagData: DagData) => {
+    console.log('Converting DAG data to React Flow:', dagData);
+    
     const nodes: Node[] = [];
     const edges: Edge[] = [];
     
@@ -474,6 +504,20 @@ const DagFlow: React.FC = () => {
     }
   };
 
+  // Handle escape key to clear selection
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && selectedTable) {
+        clearLineage();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedTable, clearLineage]);
+
   // Initial data load
   useEffect(() => {
     const loadData = async () => {
@@ -512,14 +556,12 @@ const DagFlow: React.FC = () => {
           <label htmlFor="project-select">Project: </label>
           <select
             id="project-select"
-            value={projectInfo?.current_project || (projectInfo?.available_projects?.[0] || '')}
+            value={projectInfo?.current_project || ''}
             onChange={(e) => switchProject(e.target.value)}
             disabled={!projectInfo}
           >
             {!projectInfo && (
-              <option value="" disabled>
-                Loading projects...
-              </option>
+              <option value="">Loading...</option>
             )}
             {projectInfo?.available_projects?.map((project) => (
               <option key={project} value={project}>
@@ -528,74 +570,66 @@ const DagFlow: React.FC = () => {
             ))}
           </select>
         </div>
-        <div className="dag-stats">
-          <span>Nodes: {nodes.length}</span>
-          <span>Connections: {edges.length}</span>
-          {selectedTable && (
-            <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>
-              Selected: {selectedTable}
+        
+        <div className="dag-controls">
+          {projectInfo?.has_pending_changes && (
+            <span className="pending-changes">
+              📄 {projectInfo.pending_changes_count} file(s) changed
             </span>
           )}
-        </div>
-        <div className="header-buttons">
-          {selectedTable && (
-            <button onClick={clearLineage} className="clear-lineage-button">
-              Clear Selection
-            </button>
-          )}
-          <button onClick={fetchDagData} className="refresh-button">
-            Refresh
+          <button 
+            onClick={refreshProject} 
+            disabled={refreshing || !projectInfo?.current_project}
+            className="refresh-button"
+          >
+            {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
       </div>
-      
-      {/* Color Legend */}
-      <div className="color-legend">
-        <h4>Groups</h4>
-        {nodes.length > 0 && 
-          [...new Set(nodes.map(node => node.data.group))]
-            .sort()
-            .map((group) => {
-              const groupColor = getGroupColor(group);
-              return (
-                <div key={group} className="legend-item">
-                  <div 
-                    className="legend-color" 
-                    style={{ backgroundColor: groupColor }}
-                  ></div>
-                  <span>{group}</span>
-                </div>
-              );
-            })
-        }
-      </div>
-      
-      <div className="dag-flow">
+
+      <div className="dag-flow-container">
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={handleNodesChange}
+          onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onNodeClick={onNodeClick}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
           fitView
-          attributionPosition="bottom-left"
-          onNodeClick={onNodeClick}
-          nodesDraggable={true}
-          nodesConnectable={false}
-          elementsSelectable={true}
+          attributionPosition="top-right"
+          className="dag-flow"
         >
-          <Controls />
           <MiniMap />
-          <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e0e0e0" />
+          <Controls />
+          <Background color="#ffffff" />
         </ReactFlow>
+
+        {/* Color Legend */}
+        {nodes.length > 0 && (
+          <div className="color-legend">
+            <h4>Groups</h4>
+            {Array.from(new Set(nodes.map(node => node.data.group))).map(group => (
+              <div key={group} className="legend-item">
+                <div 
+                  className="legend-color" 
+                  style={{ backgroundColor: getGroupColor(group) }}
+                ></div>
+                <span title={group}>{group}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-      
-      <TableDetailsPanel
-        tableDetails={tableDetails}
-        isVisible={showDetailsPanel}
-        onClose={() => setShowDetailsPanel(false)}
-      />
+
+      {/* Table Details Panel */}
+      {showDetailsPanel && tableDetails && (
+        <TableDetailsPanel
+          tableDetails={tableDetails}
+          isVisible={showDetailsPanel}
+          onClose={clearLineage}
+        />
+      )}
     </div>
   );
 };
